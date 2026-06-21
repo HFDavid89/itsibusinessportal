@@ -1,0 +1,330 @@
+// Itsi Business — Prisma Schema
+//
+// RULE: Itsi Business owns the business customer.
+//       Itsi Mobile owns the wholesale/provider fulfilment.
+//
+// This schema covers Itsi Business retail data only.
+// Provider-side data lives in Itsi Mobile.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── RBAC ─────────────────────────────────────────────────────────────────────
+
+model StaffUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  realm        String         @default("staff")
+  roles        StaffRole[]
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("staff_users")
+}
+
+model StaffRole {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  permissions String[]
+  staffUsers  StaffUser[]
+  createdAt   DateTime  @default(now())
+
+  @@map("staff_roles")
+}
+
+model PortalUser {
+  id           String        @id @default(cuid())
+  accountId    String
+  email        String        @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  realm        String        @default("portal")
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  account      BusinessAccount @relation(fields: [accountId], references: [id])
+
+  @@map("portal_users")
+}
+
+// ─── CRM ──────────────────────────────────────────────────────────────────────
+
+model BusinessAccount {
+  id            String                @id @default(cuid())
+  accountNumber String                @unique
+  companyName   String
+  tradingName   String?
+  companyNumber String?
+  vatNumber     String?
+  status        String                @default("PROSPECT")
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  contacts       BusinessContact[]
+  sites          BusinessSite[]
+  contracts      BusinessContract[]
+  invoices       BusinessInvoice[]
+  payments       BusinessPayment[]
+  tickets        BusinessTicket[]
+  mobileServices BusinessMobileService[]
+  broadbandServices BusinessBroadbandService[]
+  energyServices BusinessEnergyService[]
+  portalUsers    PortalUser[]
+  timelineEvents TimelineEvent[]
+
+  @@map("business_accounts")
+}
+
+model BusinessContact {
+  id        String          @id @default(cuid())
+  accountId String
+  siteId    String?
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  role      String          @default("GENERAL")
+  isPrimary Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  account   BusinessAccount @relation(fields: [accountId], references: [id])
+  site      BusinessSite?   @relation(fields: [siteId], references: [id])
+
+  @@map("business_contacts")
+}
+
+model BusinessSite {
+  id           String          @id @default(cuid())
+  accountId    String
+  name         String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  county       String?
+  postcode     String
+  uprn         String?
+  isPrimary    Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  account      BusinessAccount @relation(fields: [accountId], references: [id])
+  contacts     BusinessContact[]
+  broadbandServices BusinessBroadbandService[]
+  energyServices    BusinessEnergyService[]
+  tickets           BusinessTicket[]
+
+  @@map("business_sites")
+}
+
+model BusinessContract {
+  id            String          @id @default(cuid())
+  accountId     String
+  name          String
+  startDate     DateTime?
+  endDate       DateTime?
+  status        String          @default("ACTIVE")
+  terms         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  account       BusinessAccount @relation(fields: [accountId], references: [id])
+
+  @@map("business_contracts")
+}
+
+// ─── BILLING ──────────────────────────────────────────────────────────────────
+
+model BusinessInvoice {
+  id              String          @id @default(cuid())
+  invoiceNumber   String          @unique
+  accountId       String
+  status          String          @default("DRAFT")
+  issuedAt        DateTime?
+  dueAt           DateTime?
+  totalAmountPence Int
+  currency        String          @default("GBP")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  account         BusinessAccount @relation(fields: [accountId], references: [id])
+  lineItems       BusinessInvoiceLineItem[]
+  payments        BusinessPayment[]
+
+  @@map("business_invoices")
+}
+
+model BusinessInvoiceLineItem {
+  id               String          @id @default(cuid())
+  invoiceId        String
+  description      String
+  quantity         Int             @default(1)
+  unitAmountPence  Int
+  totalAmountPence Int
+  serviceType      String?
+  createdAt        DateTime        @default(now())
+  invoice          BusinessInvoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("business_invoice_line_items")
+}
+
+model BusinessPayment {
+  id          String          @id @default(cuid())
+  invoiceId   String
+  accountId   String
+  amountPence Int
+  currency    String          @default("GBP")
+  status      String          @default("PENDING")
+  method      String
+  paidAt      DateTime?
+  createdAt   DateTime        @default(now())
+  invoice     BusinessInvoice @relation(fields: [invoiceId], references: [id])
+  account     BusinessAccount @relation(fields: [accountId], references: [id])
+
+  @@map("business_payments")
+}
+
+// ─── SUPPORT / DESK ───────────────────────────────────────────────────────────
+
+model BusinessTicket {
+  id                           String          @id @default(cuid())
+  reference                    String          @unique
+  accountId                    String
+  siteId                       String?
+  subject                      String
+  category                     String          @default("GENERAL")
+  status                       String          @default("OPEN")
+  priority                     String          @default("MEDIUM")
+  wholesaleEscalationId        String?
+  wholesaleEscalationReference String?
+  createdAt                    DateTime        @default(now())
+  updatedAt                    DateTime        @updatedAt
+  account                      BusinessAccount @relation(fields: [accountId], references: [id])
+  site                         BusinessSite?   @relation(fields: [siteId], references: [id])
+  threads                      BusinessTicketThread[]
+
+  @@map("business_tickets")
+}
+
+model BusinessTicketThread {
+  id         String         @id @default(cuid())
+  ticketId   String
+  body       String
+  authorType String
+  authorId   String
+  isInternal Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  ticket     BusinessTicket @relation(fields: [ticketId], references: [id])
+
+  @@map("business_ticket_threads")
+}
+
+// ─── SERVICES ─────────────────────────────────────────────────────────────────
+
+model BusinessMobileService {
+  id                    String          @id @default(cuid())
+  accountId             String
+  msisdn                String?
+  tariffName            String
+  status                String          @default("PENDING")
+  wholesaleServiceLinkId String?
+  startDate             DateTime?
+  endDate               DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  account               BusinessAccount @relation(fields: [accountId], references: [id])
+  wholesaleLink         WholesaleServiceLink? @relation(fields: [wholesaleServiceLinkId], references: [id])
+
+  @@map("business_mobile_services")
+}
+
+model BusinessBroadbandService {
+  id                    String          @id @default(cuid())
+  accountId             String
+  siteId                String
+  productName           String
+  status                String          @default("PENDING")
+  wholesaleServiceLinkId String?
+  startDate             DateTime?
+  endDate               DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  account               BusinessAccount @relation(fields: [accountId], references: [id])
+  site                  BusinessSite    @relation(fields: [siteId], references: [id])
+  wholesaleLink         WholesaleServiceLink? @relation(fields: [wholesaleServiceLinkId], references: [id])
+
+  @@map("business_broadband_services")
+}
+
+model BusinessEnergyService {
+  id                String          @id @default(cuid())
+  accountId         String
+  siteId            String
+  mpan              String?
+  mprn              String?
+  supplierName      String?
+  status            String          @default("PENDING")
+  contractStartDate DateTime?
+  contractEndDate   DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  account           BusinessAccount @relation(fields: [accountId], references: [id])
+  site              BusinessSite    @relation(fields: [siteId], references: [id])
+
+  @@map("business_energy_services")
+}
+
+// ─── WHOLESALE LINK ───────────────────────────────────────────────────────────
+// Links Itsi Business retail service records to Itsi Mobile wholesale orders.
+// Itsi Mobile owns the provider-side fulfilment. This is the join.
+
+model WholesaleServiceLink {
+  id                        String   @id @default(cuid())
+  itsiMobileServiceOrderId  String   @unique
+  itsiMobileServiceInstanceId String?
+  serviceType               String
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  mobileServices    BusinessMobileService[]
+  broadbandServices BusinessBroadbandService[]
+
+  @@map("wholesale_service_links")
+}
+
+// ─── AUDIT / TIMELINE ─────────────────────────────────────────────────────────
+
+model TimelineEvent {
+  id          String          @id @default(cuid())
+  type        String
+  accountId   String
+  actorId     String?
+  actorType   String          @default("SYSTEM")
+  meta        Json            @default("{}")
+  occurredAt  DateTime        @default(now())
+  account     BusinessAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, occurredAt])
+  @@map("timeline_events")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  actorId    String?
+  actorType  String   @default("SYSTEM")
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

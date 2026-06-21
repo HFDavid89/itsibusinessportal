@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+*.local
+
+# Prisma
+prisma/migrations/
+
+# Turbo cache
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Test artefacts
+coverage/
+playwright-report/
+test-results/
+
+# Misc
+*.tsbuildinfo
+.wholesale-api-key.local
