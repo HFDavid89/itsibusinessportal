@@ -195,13 +195,16 @@ model BusinessPayment {
 
 model BusinessTicket {
   id                           String          @id @default(cuid())
-  reference                    String          @unique
+  ticketNumber                 String          @unique
   accountId                    String
+  contactId                    String?
   siteId                       String?
   subject                      String
+  description                  String?
   category                     String          @default("GENERAL")
   status                       String          @default("OPEN")
-  priority                     String          @default("MEDIUM")
+  priority                     String          @default("NORMAL")
+  assignedToStaffUserId        String?
   wholesaleEscalationId        String?
   wholesaleEscalationReference String?
   createdAt                    DateTime        @default(now())
@@ -210,18 +213,21 @@ model BusinessTicket {
   site                         BusinessSite?   @relation(fields: [siteId], references: [id])
   threads                      BusinessTicketThread[]
 
+  @@index([accountId, status])
+  @@index([status, priority])
   @@map("business_tickets")
 }
 
 model BusinessTicketThread {
-  id         String         @id @default(cuid())
-  ticketId   String
-  body       String
-  authorType String
-  authorId   String
-  isInternal Boolean        @default(false)
-  createdAt  DateTime       @default(now())
-  ticket     BusinessTicket @relation(fields: [ticketId], references: [id])
+  id              String         @id @default(cuid())
+  ticketId        String
+  body            String
+  authorType      String
+  authorId        String
+  isInternal      Boolean        @default(false)
+  customerVisible Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  ticket          BusinessTicket @relation(fields: [ticketId], references: [id])
 
   @@map("business_ticket_threads")
 }

@@ -76,6 +76,19 @@ pnpm --filter @itsi-business/crm type-check
 pnpm type-check
 ```
 
+## Intentional Deferral — Delete / Archive
+
+Phase 4 implemented **create, read, and update** for `BusinessAccount`, `BusinessContact`, and `BusinessSite`, plus timeline reads.
+
+**Delete and archive behaviour is intentionally deferred** until lifecycle rules are agreed. Specifically:
+
+- Should records be soft-deleted (e.g. `archivedAt` timestamp) or hard-deleted?
+- Are closed accounts retained for billing/audit compliance?
+- Can contacts be removed independently of their account?
+- What cascade behaviour is required when an account is closed?
+
+No destructive DELETE routes have been added. Do not introduce them until the above questions are answered and agreed in writing.
+
 ## Commit
 
 ```

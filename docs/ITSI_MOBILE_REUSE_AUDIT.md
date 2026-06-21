@@ -132,3 +132,22 @@
 11. **apps/billing** — reuse invoice list/detail UI patterns only
 12. **apps/admin** — reuse settings/staff/roles admin patterns, strip provider integration cards
 13. **apps/portal** — reuse auth + self-service patterns, no consumer signup
+
+---
+
+## Phase 5 — Desk reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| `apps/api/src/routes/admin/tickets.ts` — list, create, patch, thread routes | **Refocus** | Reused route structure, Zod schema approach, `$transaction` pattern, response envelope. Removed: `tenantId` resolution, VIP restriction checks, SLA deadline stamping, `assignedToName` snapshot. | Multi-tenancy, VIP, SLA deferred |
+| `apps/api/src/routes/admin/tickets.ts` — thread `isInternal` flag | **Reuse** | Reused directly. Extended with `customerVisible` boolean. | — |
+| `apps/api/src/routes/admin/tickets.ts` — SLA service (`ticket-sla.service.ts`) | **Skip** | No per-priority SLA policy model in Itsi Business yet. | SLA deferred to future phase |
+| `apps/api/src/routes/admin/tickets.ts` — outbound channel routing (WhatsApp, SMS, Email) | **Skip** | Itsi Business desk is internal-only at this stage. No multi-channel. | Channel routing excluded |
+| `apps/api/src/routes/admin/tickets.ts` — attachment upload | **Skip** | No file storage configured. | Attachments deferred |
+| `apps/desk/app/(app)/tickets/[ticketId]/_components/TicketDetailWorkspace.tsx` — tab layout | **Refocus** | Reused 3-tab pattern (Thread / Notes / Timeline). Removed: WhatsApp compose, SLA strip, cockpit health score, department/agent selectors, attachment upload. | Provider/SLA/channel UI excluded |
+| `apps/desk/app/(app)/tickets/page.tsx` — list with status filter views | **Refocus** | Reused status tabs + search pattern. Simplified: removed saved views, cockpit strip, overdue flag, assignedToMe filter. | Cockpit/SLA/overdue deferred |
+| `components/tickets/TicketStatusMenu.tsx` / `TicketOwnerMenu.tsx` — status/priority badge colours | **Reuse** | Re-implemented as Tailwind inline `STATUS_CLS` / `PRIORITY_CLS` maps, same colour logic. | — |
+| Timeline write pattern — `prisma.timelineEvent.create` on key events | **Reuse** | Same pattern reused for `TICKET_CREATED`, `TICKET_STATUS_CHANGED`, `TICKET_REPLY_ADDED`, `TICKET_INTERNAL_NOTE_ADDED`, `TICKET_ESCALATED_TO_ITSI_MOBILE`. | — |
+| `apps/desk/lib/ticket-detail-utils.ts` — SLA/overdue/channel helpers | **Skip** | Not applicable without SLA policy or multi-channel. | — |
+| Department/team model | **Skip** | Itsi Business has no department model. Assignment to staff user only. | Departments deferred |
+| VIP account restriction (`account-access.ts`) | **Skip** | No VIP concept in Itsi Business. | — |
