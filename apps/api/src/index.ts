@@ -17,6 +17,7 @@ import { siteRoutes } from './routes/sites';
 import { contactRoutes } from './routes/contacts';
 import { ticketRoutes } from './routes/tickets';
 import { invoiceRoutes } from './routes/invoices';
+import { catalogueRoutes } from './routes/catalogue';
 import { serviceRoutes } from './routes/services';
 import { wholesaleRoutes } from './routes/wholesale';
 
@@ -34,8 +35,9 @@ async function start() {
   await app.register(siteRoutes, { prefix: '/api/v1/sites' });
   await app.register(contactRoutes, { prefix: '/api/v1/contacts' });
   await app.register(ticketRoutes, { prefix: '/api/v1/tickets' });
-  await app.register(invoiceRoutes, { prefix: '/api/v1/invoices' });
-  await app.register(serviceRoutes, { prefix: '/api/v1/services' });
+  await app.register(invoiceRoutes,   { prefix: '/api/v1/invoices' });
+  await app.register(catalogueRoutes, { prefix: '/api/v1/services/catalogue' });
+  await app.register(serviceRoutes,   { prefix: '/api/v1/services' });
   await app.register(wholesaleRoutes, { prefix: '/api/v1/wholesale' });
 
   try {

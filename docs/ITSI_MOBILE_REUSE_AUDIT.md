@@ -177,3 +177,23 @@
 | Subscription billing model (`billingAccount`, `plan`, `ratingPeriod`) | **Skip** | Itsi Business invoices attach directly to `BusinessAccount`. No subscription intermediary. | Not applicable |
 | Wholesale billing API calls (`/api/v1/wholesale/billing/…`) | **Skip (hard excluded)** | No wholesale billing calls. `wholesaleCostReference` field is placeholder only, never populated via API. | Hard excluded |
 | Dunning / overdue automation | **Skip** | No scheduled job or dunning runner. OVERDUE status set manually or future background worker. | Deferred |
+
+---
+
+## Phase 7 — Business Service Catalogue reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| `apps/api/src/routes/admin/billing.ts` — RBAC hook / Zod / `$transaction` patterns | **Reuse** | Same pattern. Permissions: `services.catalogue.read/write`, `services.records.read/write`, `services.wholesale_links.read/write`. | — |
+| `apps/billing/src/lib/api.ts` — typed `apiFetch` client | **Reuse** | Pattern reused verbatim in `apps/services/src/lib/api.ts`. | — |
+| `apps/billing/src/app/invoices/page.tsx` — status tabs, search, pagination | **Reuse** | Same UI pattern reused for catalogue list and service records list. | — |
+| `apps/billing/src/app/page.tsx` — dashboard stat cards + two-panel layout | **Reuse** | Pattern reused in services dashboard. | — |
+| `packages/staff-shell/src/workspace-urls.ts` + `app-switcher.tsx` | **Extend** | Added `services` workspace key, URL env `NEXT_PUBLIC_SERVICES_URL`, port 4010, switcher entry. | — |
+| Timeline write pattern — `prisma.timelineEvent.create` | **Reuse** | Events: `CATALOGUE_ITEM_CREATED`, `CATALOGUE_ITEM_UPDATED`, `CATALOGUE_ITEM_ARCHIVED`, `MOBILE_SERVICE_CREATED`, `MOBILE_SERVICE_UPDATED`, `BROADBAND_SERVICE_CREATED`, `BROADBAND_SERVICE_UPDATED`, `ENERGY_SERVICE_CREATED`, `ENERGY_SERVICE_UPDATED`, `WHOLESALE_LINK_PLACEHOLDER_CREATED`. | — |
+| `apps/api/src/routes/admin/telecom/` — service order routes | **Skip (hard excluded)** | Provider service-order routes belong to Itsi Mobile. Phase 7 creates retail records only. | Hard excluded |
+| Gamma, KCOM, MS3 wholesale API clients | **Skip (hard excluded)** | No direct wholesale API calls. `ItsiMobileWholesaleServiceLink` is a local placeholder reference only. | Hard excluded |
+| OTS Hero energy provisioning | **Skip (hard excluded)** | No energy provider API. Energy service records are retail-only. | Hard excluded |
+| Itsi Mobile wholesale API (`/api/v1/wholesale/…`) | **Skip (hard excluded)** | Wholesale link placeholder created locally. NEVER calls Itsi Mobile at this phase. | Hard excluded |
+| Number porting, SIM ordering, usage rating | **Skip (hard excluded)** | Provider fulfilment — belongs to Itsi Mobile. | Hard excluded |
+| `money()` helper | **Reuse** | Re-implemented in `apps/services/src/lib/api.ts` using `Intl.NumberFormat('en-GB')`. Prices always stored as integer pence. | — |
+| Response envelope `{ success, data, meta }` | **Reuse** | Same pattern throughout `catalogue.ts` and `services.ts` routes. | — |

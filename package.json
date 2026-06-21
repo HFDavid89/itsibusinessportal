@@ -7,12 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently --names \"api,admin,crm,billing,desk,portal\" --prefix-colors \"cyan,magenta,green,blue,yellow,gray\" \"pnpm --filter @itsi-business/api dev\" \"pnpm --filter @itsi-business/admin dev\" \"pnpm --filter @itsi-business/crm dev\" \"pnpm --filter @itsi-business/billing dev\" \"pnpm --filter @itsi-business/desk dev\" \"pnpm --filter @itsi-business/portal dev\"",
+    "dev": "concurrently --names \"api,admin,crm,billing,desk,services,portal\" --prefix-colors \"cyan,magenta,green,blue,yellow,teal,gray\" \"pnpm --filter @itsi-business/api dev\" \"pnpm --filter @itsi-business/admin dev\" \"pnpm --filter @itsi-business/crm dev\" \"pnpm --filter @itsi-business/billing dev\" \"pnpm --filter @itsi-business/desk dev\" \"pnpm --filter @itsi-business/services dev\" \"pnpm --filter @itsi-business/portal dev\"",
     "dev:api": "pnpm --filter @itsi-business/api dev",
     "dev:admin": "pnpm --filter @itsi-business/admin dev",
     "dev:crm": "pnpm --filter @itsi-business/crm dev",
     "dev:billing": "pnpm --filter @itsi-business/billing dev",
     "dev:desk": "pnpm --filter @itsi-business/desk dev",
+    "dev:services": "pnpm --filter @itsi-business/services dev",
     "dev:portal": "pnpm --filter @itsi-business/portal dev",
     "build": "turbo run build",
     "lint": "turbo run lint",

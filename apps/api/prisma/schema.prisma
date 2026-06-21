@@ -254,77 +254,141 @@ model BusinessTicketThread {
   @@map("business_ticket_threads")
 }
 
+// ─── SERVICE CATALOGUE ────────────────────────────────────────────────────────
+// Itsi Business-owned retail product catalogue.
+// Service types: MOBILE | BROADBAND | ENERGY | SOFTWARE | SUPPORT | OTHER
+// Statuses: ACTIVE | INACTIVE | ARCHIVED
+
+model BusinessServiceCatalogueItem {
+  id                         String   @id @default(cuid())
+  sku                        String   @unique
+  name                       String
+  description                String?
+  serviceType                String   // MOBILE | BROADBAND | ENERGY | SOFTWARE | SUPPORT | OTHER
+  status                     String   @default("ACTIVE") // ACTIVE | INACTIVE | ARCHIVED
+  retailPricePence           Int      @default(0)
+  wholesaleCostEstimatePence Int?
+  setupFeePence              Int?
+  contractTermMonths         Int?
+  taxRate                    Float    @default(20.0)
+  marginPolicy               String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  mobileServices    BusinessMobileService[]
+  broadbandServices BusinessBroadbandService[]
+  energyServices    BusinessEnergyService[]
+
+  @@index([serviceType, status])
+  @@map("business_service_catalogue_items")
+}
+
 // ─── SERVICES ─────────────────────────────────────────────────────────────────
+// Itsi Business-owned retail service records.
+// Statuses: DRAFT | REQUESTED | ACTIVE | SUSPENDED | CEASED | CANCELLED
 
 model BusinessMobileService {
-  id                    String          @id @default(cuid())
-  accountId             String
-  msisdn                String?
-  tariffName            String
-  status                String          @default("PENDING")
+  id                     String                        @id @default(cuid())
+  accountId              String
+  contactId              String?
+  siteId                 String?
+  catalogueItemId        String?
+  serviceReference       String                        @unique
+  displayName            String
+  status                 String                        @default("DRAFT")
+  retailPricePence       Int                           @default(0)
+  contractStartDate      DateTime?
+  contractEndDate        DateTime?
+  mobileNumber           String?
+  simLabel               String?
+  costCentre             String?
   wholesaleServiceLinkId String?
-  startDate             DateTime?
-  endDate               DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  account               BusinessAccount @relation(fields: [accountId], references: [id])
-  wholesaleLink         WholesaleServiceLink? @relation(fields: [wholesaleServiceLinkId], references: [id])
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  account                BusinessAccount               @relation(fields: [accountId], references: [id])
+  catalogueItem          BusinessServiceCatalogueItem? @relation(fields: [catalogueItemId], references: [id])
+  wholesaleLink          ItsiMobileWholesaleServiceLink? @relation(fields: [wholesaleServiceLinkId], references: [id])
 
+  @@index([accountId, status])
   @@map("business_mobile_services")
 }
 
 model BusinessBroadbandService {
-  id                    String          @id @default(cuid())
-  accountId             String
-  siteId                String
-  productName           String
-  status                String          @default("PENDING")
+  id                     String                        @id @default(cuid())
+  accountId              String
+  siteId                 String
+  catalogueItemId        String?
+  serviceReference       String                        @unique
+  displayName            String
+  status                 String                        @default("DRAFT")
+  retailPricePence       Int                           @default(0)
+  contractStartDate      DateTime?
+  contractEndDate        DateTime?
+  accessTechnology       String?
+  postcode               String
+  uprn                   String?
+  circuitLabel           String?
   wholesaleServiceLinkId String?
-  startDate             DateTime?
-  endDate               DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  account               BusinessAccount @relation(fields: [accountId], references: [id])
-  site                  BusinessSite    @relation(fields: [siteId], references: [id])
-  wholesaleLink         WholesaleServiceLink? @relation(fields: [wholesaleServiceLinkId], references: [id])
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  account                BusinessAccount               @relation(fields: [accountId], references: [id])
+  site                   BusinessSite                  @relation(fields: [siteId], references: [id])
+  catalogueItem          BusinessServiceCatalogueItem? @relation(fields: [catalogueItemId], references: [id])
+  wholesaleLink          ItsiMobileWholesaleServiceLink? @relation(fields: [wholesaleServiceLinkId], references: [id])
 
+  @@index([accountId, status])
   @@map("business_broadband_services")
 }
 
+// Statuses: DRAFT | ACTIVE | SUSPENDED | CEASED
+// Fuel types: ELECTRICITY | GAS | DUAL_FUEL
 model BusinessEnergyService {
-  id                String          @id @default(cuid())
-  accountId         String
-  siteId            String
-  mpan              String?
-  mprn              String?
-  supplierName      String?
-  status            String          @default("PENDING")
-  contractStartDate DateTime?
-  contractEndDate   DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  account           BusinessAccount @relation(fields: [accountId], references: [id])
-  site              BusinessSite    @relation(fields: [siteId], references: [id])
+  id                     String                        @id @default(cuid())
+  accountId              String
+  siteId                 String
+  catalogueItemId        String?
+  serviceReference       String                        @unique
+  displayName            String
+  status                 String                        @default("DRAFT")
+  fuelType               String                        @default("ELECTRICITY")
+  meterPointReference    String?
+  retailPriceDescription String?
+  contractStartDate      DateTime?
+  contractEndDate        DateTime?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  account                BusinessAccount               @relation(fields: [accountId], references: [id])
+  site                   BusinessSite                  @relation(fields: [siteId], references: [id])
+  catalogueItem          BusinessServiceCatalogueItem? @relation(fields: [catalogueItemId], references: [id])
 
+  @@index([accountId, status])
   @@map("business_energy_services")
 }
 
 // ─── WHOLESALE LINK ───────────────────────────────────────────────────────────
-// Links Itsi Business retail service records to Itsi Mobile wholesale orders.
-// Itsi Mobile owns the provider-side fulfilment. This is the join.
+// Itsi Business-owned placeholder link to an Itsi Mobile wholesale order/service.
+// Itsi Mobile owns the provider-side fulfilment. This is a reference only.
+// RULE: Do NOT call Itsi Mobile wholesale API from this record. Placeholder only.
 
-model WholesaleServiceLink {
-  id                        String   @id @default(cuid())
-  itsiMobileServiceOrderId  String   @unique
-  itsiMobileServiceInstanceId String?
-  serviceType               String
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+model ItsiMobileWholesaleServiceLink {
+  id                          String   @id @default(cuid())
+  businessAccountId           String
+  businessServiceType         String   // MOBILE | BROADBAND
+  businessServiceReference    String
+  itsiMobileWholesaleOrderId  String?
+  itsiMobileServiceOrderId    String?
+  safeProviderReference       String?
+  status                      String   @default("PLACEHOLDER")
+  lastSyncedAt                DateTime?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
 
   mobileServices    BusinessMobileService[]
   broadbandServices BusinessBroadbandService[]
 
-  @@map("wholesale_service_links")
+  @@index([businessAccountId])
+  @@index([businessServiceReference])
+  @@map("itsi_mobile_wholesale_service_links")
 }
 
 // ─── AUDIT / TIMELINE ─────────────────────────────────────────────────────────
