@@ -10,7 +10,7 @@ export function PlatformAccessGuard({ children }: { children: React.ReactNode })
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <LoadingSpinner label="Checking access" />
+        <LoadingSpinner size="md" />
       </div>
     );
   }
