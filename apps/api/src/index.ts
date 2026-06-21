@@ -9,6 +9,7 @@
  */
 import Fastify from 'fastify';
 import { logger } from '@itsi-business/core';
+import { registerSecurity } from './middleware/security';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { accountRoutes } from './routes/accounts';
@@ -25,6 +26,8 @@ const HOST = process.env.HOST ?? '0.0.0.0';
 const app = Fastify({ logger: false });
 
 async function start() {
+  await registerSecurity(app);
+
   await app.register(healthRoutes);
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(accountRoutes, { prefix: '/api/v1/accounts' });
