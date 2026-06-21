@@ -1,9 +1,15 @@
 /**
  * Auth realms for Itsi Business.
- * - staff: Internal Itsi Business staff (admin, CRM, billing, desk).
- * - portal: Business customer portal users.
+ * - platform: Itsi Business super-admin (internal ops, cross-account).
+ * - staff:    Internal Itsi Business staff (admin, CRM, billing, desk).
+ * - portal:   Business customer portal users (self-service, read-only scoped).
+ *
+ * RULE: Portal users are business customers — not residential/mobile consumers.
  */
-export type AuthRealm = 'staff' | 'portal';
+export const AuthRealm = {
+  PLATFORM: 'platform',
+  STAFF: 'staff',
+  PORTAL: 'portal',
+} as const;
 
-export const STAFF_REALM: AuthRealm = 'staff';
-export const PORTAL_REALM: AuthRealm = 'portal';
+export type AuthRealm = (typeof AuthRealm)[keyof typeof AuthRealm];
