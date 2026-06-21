@@ -143,51 +143,73 @@ model BusinessContract {
 
 // ─── BILLING ──────────────────────────────────────────────────────────────────
 
+// Statuses: DRAFT → ISSUED → PART_PAID | PAID | OVERDUE | VOID
 model BusinessInvoice {
   id              String          @id @default(cuid())
   invoiceNumber   String          @unique
   accountId       String
   status          String          @default("DRAFT")
-  issuedAt        DateTime?
-  dueAt           DateTime?
-  totalAmountPence Int
+  issueDate       DateTime?
+  dueDate         DateTime?
+  notes           String?
+  // All monetary values stored in pence (integer)
+  subtotalPence   Int             @default(0)
+  taxTotalPence   Int             @default(0)
+  discountTotalPence Int          @default(0)
+  totalPence      Int             @default(0)
+  amountPaidPence Int             @default(0)
   currency        String          @default("GBP")
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   account         BusinessAccount @relation(fields: [accountId], references: [id])
-  lineItems       BusinessInvoiceLineItem[]
+  lines           BusinessInvoiceLine[]
   payments        BusinessPayment[]
 
+  @@index([accountId, status])
+  @@index([status, dueDate])
   @@map("business_invoices")
 }
 
-model BusinessInvoiceLineItem {
-  id               String          @id @default(cuid())
-  invoiceId        String
-  description      String
-  quantity         Int             @default(1)
-  unitAmountPence  Int
-  totalAmountPence Int
-  serviceType      String?
-  createdAt        DateTime        @default(now())
-  invoice          BusinessInvoice @relation(fields: [invoiceId], references: [id])
+// Service types: MOBILE | BROADBAND | ENERGY | SOFTWARE | SUPPORT | OTHER
+model BusinessInvoiceLine {
+  id                       String          @id @default(cuid())
+  invoiceId                String
+  description              String
+  serviceType              String?         // MOBILE | BROADBAND | ENERGY | SOFTWARE | SUPPORT | OTHER
+  quantity                 Int             @default(1)
+  unitPricePence           Int             @default(0)
+  discountAmountPence      Int             @default(0)
+  taxRate                  Float           @default(0)   // e.g. 20.0 for 20%
+  netAmountPence           Int             @default(0)   // (quantity * unitPrice) - discount
+  taxAmountPence           Int             @default(0)   // netAmount * taxRate / 100
+  grossAmountPence         Int             @default(0)   // netAmount + taxAmount
+  businessServiceReference String?
+  wholesaleCostReference   String?         // placeholder only — never populated via provider API
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  invoice                  BusinessInvoice @relation(fields: [invoiceId], references: [id])
 
-  @@map("business_invoice_line_items")
+  @@map("business_invoice_lines")
 }
 
+// Manual/offline payment record — not connected to any payment provider
 model BusinessPayment {
   id          String          @id @default(cuid())
   invoiceId   String
   accountId   String
   amountPence Int
   currency    String          @default("GBP")
-  status      String          @default("PENDING")
-  method      String
-  paidAt      DateTime?
+  method      String          @default("MANUAL")
+  reference   String?
+  notes       String?
+  paidAt      DateTime        @default(now())
+  recordedByStaffUserId String?
   createdAt   DateTime        @default(now())
   invoice     BusinessInvoice @relation(fields: [invoiceId], references: [id])
   account     BusinessAccount @relation(fields: [accountId], references: [id])
 
+  @@index([invoiceId])
+  @@index([accountId])
   @@map("business_payments")
 }
 

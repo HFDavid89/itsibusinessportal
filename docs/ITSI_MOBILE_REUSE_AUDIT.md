@@ -151,3 +151,29 @@
 | `apps/desk/lib/ticket-detail-utils.ts` — SLA/overdue/channel helpers | **Skip** | Not applicable without SLA policy or multi-channel. | — |
 | Department/team model | **Skip** | Itsi Business has no department model. Assignment to staff user only. | Departments deferred |
 | VIP account restriction (`account-access.ts`) | **Skip** | No VIP concept in Itsi Business. | — |
+
+---
+
+## Phase 6 — Business Billing Foundation reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| `apps/billing/app/(app)/invoices/page.tsx` — invoice list, status filter tabs, search | **Refocus** | Reused status tab + search list pattern. Removed: Cockpit components, `account_id` selector from URL, PDF download column, subscription billing columns, finalise action. | Cockpit/PDF/subscription stripped |
+| `apps/billing/app/(app)/invoices/page.tsx` — invoice detail drawer with line items | **Refocus** | Reused 2-column layout (lines+totals / sidebar). Removed: credit note, Xero sync button, GoCardless charge button, Stripe charge button. | All provider payment buttons excluded |
+| `apps/billing/app/(app)/invoices/page.tsx` — edit modal for line items + due date | **Refocus** | Reused line item form pattern. Changed amounts from decimal pence strings to integer pence. Added: `serviceType`, `discountAmountPence`, `taxRate`. | Subscription rate card lookup excluded |
+| Status badge colour palette (DRAFT/ISSUED/PAID/VOID etc.) | **Reuse** | Same colour semantics re-implemented as Tailwind `STATUS_CLS` map. | — |
+| `apps/api/src/routes/admin/billing.ts` — RBAC hook structure | **Reuse** | Same `onRequest` hook array pattern with `requirePermission`. Permissions renamed: `billing.invoices.write`, `.issue`, `.void`, `billing.payments.record`. | — |
+| `apps/api/src/routes/admin/billing.ts` — lifecycle guards (no edit on non-DRAFT) | **Reuse** | Same status guard pattern. Extended: cannot void PAID, cannot mark-paid on DRAFT or VOID. | — |
+| `apps/api/src/routes/portal/invoices.ts` — list + get with includes | **Refocus** | Reused query shape. Removed `tenantId` filter, `account.billingAccount` include, `payments.transactions`. Added `lines`, `payments`. | Multi-tenancy stripped |
+| `$transaction` + timeline write on lifecycle events | **Reuse** | Same pattern. Events: `INVOICE_CREATED`, `INVOICE_LINE_ADDED/UPDATED/DELETED`, `INVOICE_ISSUED`, `INVOICE_VOIDED`, `INVOICE_MARKED_PAID`. | — |
+| Response envelope `{ success, data, meta }` | **Reuse** | Same pattern throughout. | — |
+| `money()` helper | **Refocus** | Re-implemented using `Intl.NumberFormat('en-GB', { style: 'currency', currency })`. | Removed Cockpit decimal formatting |
+| `billingApi` typed client | **Refocus** | Re-implemented from scratch matching new route structure. No legacy `billingAccount` intermediary. | — |
+| PDF invoice generation | **Skip** | No file storage in Phase 6. | Deferred |
+| Credit notes | **Skip** | No credit note model or route. | Deferred |
+| Xero sync (`apps/api/src/services/xero/`) | **Skip (hard excluded)** | No accounting integration in Itsi Business Phase 6. | Hard excluded |
+| GoCardless / Stripe collect routes | **Skip (hard excluded)** | No live payment collection. `mark-paid` is manual/offline only. | Hard excluded |
+| Automated usage rating / rating engine | **Skip (hard excluded)** | No usage data or rate cards. | Hard excluded |
+| Subscription billing model (`billingAccount`, `plan`, `ratingPeriod`) | **Skip** | Itsi Business invoices attach directly to `BusinessAccount`. No subscription intermediary. | Not applicable |
+| Wholesale billing API calls (`/api/v1/wholesale/billing/…`) | **Skip (hard excluded)** | No wholesale billing calls. `wholesaleCostReference` field is placeholder only, never populated via API. | Hard excluded |
+| Dunning / overdue automation | **Skip** | No scheduled job or dunning runner. OVERDUE status set manually or future background worker. | Deferred |
