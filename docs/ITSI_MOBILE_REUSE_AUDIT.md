@@ -197,3 +197,20 @@
 | Number porting, SIM ordering, usage rating | **Skip (hard excluded)** | Provider fulfilment — belongs to Itsi Mobile. | Hard excluded |
 | `money()` helper | **Reuse** | Re-implemented in `apps/services/src/lib/api.ts` using `Intl.NumberFormat('en-GB')`. Prices always stored as integer pence. | — |
 | Response envelope `{ success, data, meta }` | **Reuse** | Same pattern throughout `catalogue.ts` and `services.ts` routes. | — |
+
+---
+
+## Phase 8 — Itsi Mobile Wholesale API Bridge reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Itsi Mobile wholesale API (`/api/v1/wholesale/…`) | **Bridge** | `itsi-mobile-client.ts` — typed fetch wrapper. Itsi Business now **may** call Itsi Mobile wholesale APIs. All provider calls still belong to Itsi Mobile. | — |
+| Gamma/KCOM/MS3/OTS Hero provider APIs | **Skip (hard excluded)** | Still never called from Itsi Business code. | Hard excluded |
+| Circuit breaker pattern | **New** | Implemented in `itsi-mobile-client.ts` — 5-failure threshold, 30 s recovery window. | — |
+| Retry on 5xx | **New** | `ITSI_MOBILE_WHOLESALE_RETRY_ATTEMPTS` configurable. Retry only on server errors. | — |
+| Error envelope `{ success, error: { code, message } }` | **Reuse** | Same pattern in `handleWholesaleError()` — `WHOLESALE_DISABLED`, `CIRCUIT_OPEN`, `WHOLESALE_TIMEOUT`, `WHOLESALE_API_ERROR`. | — |
+| RBAC `requirePermission()` | **Reuse** | `wholesale.read` / `wholesale.write` — same guard used across all staff routes. | — |
+| Admin settings connectivity test pattern | **Extend** | New `/wholesale` admin page with Test Connection button. | — |
+| Automatic order submission | **Skip (deferred)** | Orders are staff-initiated only. No auto-provisioning on service record create. | Phase 9+ |
+| Webhook ingestion from Itsi Mobile | **Skip (deferred)** | No inbound webhook handlers at this phase. | Phase 9+ |
+| Billing integration with wholesale costs | **Skip (deferred)** | Wholesale cost fields exist on catalogue items but no live cost sync. | Phase 9+ |

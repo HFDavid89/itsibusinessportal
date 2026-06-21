@@ -366,9 +366,10 @@ model BusinessEnergyService {
 }
 
 // ─── WHOLESALE LINK ───────────────────────────────────────────────────────────
-// Itsi Business-owned placeholder link to an Itsi Mobile wholesale order/service.
-// Itsi Mobile owns the provider-side fulfilment. This is a reference only.
-// RULE: Do NOT call Itsi Mobile wholesale API from this record. Placeholder only.
+// Itsi Business-owned link to an Itsi Mobile wholesale order/service.
+// Itsi Mobile owns the provider-side fulfilment.
+// RULE: Itsi Business may call Itsi Mobile wholesale APIs via the bridge client.
+//       Itsi Business must NOT call Gamma, KCOM, MS3, OTS Hero, or provider APIs.
 
 model ItsiMobileWholesaleServiceLink {
   id                          String   @id @default(cuid())
@@ -378,8 +379,10 @@ model ItsiMobileWholesaleServiceLink {
   itsiMobileWholesaleOrderId  String?
   itsiMobileServiceOrderId    String?
   safeProviderReference       String?
-  status                      String   @default("PLACEHOLDER")
+  status                      String   @default("PLACEHOLDER") // PLACEHOLDER | PENDING | ACTIVE | CEASED
   lastSyncedAt                DateTime?
+  lastStatusCheckedAt         DateTime?
+  lastStatusResponse          Json?
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
