@@ -15,7 +15,7 @@ function cookieDomain(): string | undefined {
 }
 
 export function setRefreshCookie(reply: FastifyReply, token: string): void {
-  reply.setCookie(COOKIE_NAME, token, {
+  (reply as any).setCookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
@@ -26,7 +26,7 @@ export function setRefreshCookie(reply: FastifyReply, token: string): void {
 }
 
 export function clearRefreshCookie(reply: FastifyReply): void {
-  reply.setCookie(COOKIE_NAME, '', {
+  (reply as any).setCookie(COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

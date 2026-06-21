@@ -39,7 +39,7 @@ function genTicketNumber(): string {
 
 function writeTimelineEvent(accountId: string, type: string, actorId?: string, actorType = 'STAFF', meta: Record<string, unknown> = {}) {
   return prisma.timelineEvent.create({
-    data: { type, accountId, actorId, actorType, meta },
+    data: { type, accountId, actorId, actorType, meta: meta as any },
   });
 }
 

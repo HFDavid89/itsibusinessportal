@@ -1,18 +1,55 @@
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { requireAuth } from '../middleware/authenticate';
 import { requirePermission } from '../middleware/rbac';
 import {
   itsiMobileClient,
   loadWholesaleConfig,
   isWholesaleEnabled,
+  maskUpstreamError,
+  WholesaleConfigError,
   WholesaleDisabledError,
   WholesaleCircuitOpenError,
   WholesaleApiError,
   WholesaleTimeoutError,
-  type WholesaleOrderPayload,
-  type WholesaleEscalationPayload,
-  type WholesaleQuoteParams,
 } from '../services/wholesale/itsi-mobile-client';
+
+// ─── Zod schemas ──────────────────────────────────────────────────────────────
+
+const AvailabilityQuerySchema = z.object({
+  postcode: z.string().min(1, 'postcode is required').max(10),
+  uprn:     z.string().max(20).optional(),
+});
+
+const QuoteBodySchema = z.object({
+  serviceType:       z.enum(['MOBILE', 'BROADBAND', 'ENERGY']),
+  postcode:          z.string().max(10).optional(),
+  uprn:              z.string().max(20).optional(),
+  productCode:       z.string().max(100).optional(),
+  contractTermMonths: z.number().int().positive().optional(),
+});
+
+const OrderBodySchema = z.object({
+  serviceType:             z.enum(['MOBILE', 'BROADBAND']),
+  businessAccountId:       z.string().min(1),
+  businessServiceReference: z.string().min(1),
+  quoteId:                 z.string().optional(),
+  postcode:                z.string().max(10).optional(),
+  uprn:                    z.string().max(20).optional(),
+  productCode:             z.string().max(100).optional(),
+  contactName:             z.string().max(200).optional(),
+  contactPhone:            z.string().max(30).optional(),
+  contractTermMonths:      z.number().int().positive().optional(),
+  notes:                   z.string().max(2000).optional(),
+});
+
+const EscalationBodySchema = z.object({
+  orderId:                 z.string().optional(),
+  businessServiceReference: z.string().min(1),
+  subject:                 z.string().min(1).max(300),
+  description:             z.string().min(1).max(5000),
+  priority:                z.enum(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']).optional(),
+});
 
 /**
  * Wholesale routes expose the Itsi Mobile API boundary to internal staff.
@@ -25,14 +62,16 @@ import {
  */
 
 function handleWholesaleError(err: unknown, reply: any): void {
-  if (err instanceof WholesaleDisabledError) {
+  if (err instanceof WholesaleConfigError) {
+    reply.code(503).send({ success: false, error: { code: 'WHOLESALE_CONFIG_ERROR', message: err.message, field: err.field } });
+  } else if (err instanceof WholesaleDisabledError) {
     reply.code(503).send({ success: false, error: { code: 'WHOLESALE_DISABLED', message: err.message } });
   } else if (err instanceof WholesaleCircuitOpenError) {
     reply.code(503).send({ success: false, error: { code: 'CIRCUIT_OPEN', message: err.message } });
   } else if (err instanceof WholesaleTimeoutError) {
     reply.code(504).send({ success: false, error: { code: 'WHOLESALE_TIMEOUT', message: err.message } });
   } else if (err instanceof WholesaleApiError) {
-    reply.code(502).send({ success: false, error: { code: 'WHOLESALE_API_ERROR', message: err.message, upstream: err.body } });
+    reply.code(502).send({ success: false, error: { code: 'WHOLESALE_API_ERROR', message: err.message, upstream: maskUpstreamError(err.statusCode, err.body) } });
   } else {
     reply.code(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Unexpected error calling Itsi Mobile wholesale API' } });
   }
@@ -64,8 +103,11 @@ export async function wholesaleRoutes(app: FastifyInstance) {
    * Itsi Mobile proxies Gamma/KCOM/MS3 — we never call them directly.
    */
   app.get('/availability', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
-    const { postcode, uprn } = req.query as { postcode?: string; uprn?: string };
-    if (!postcode) return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'postcode is required' } });
+    const parsed = AvailabilityQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+    }
+    const { postcode, uprn } = parsed.data;
     try {
       const config = loadWholesaleConfig();
       const data   = await itsiMobileClient.getAvailability(config, postcode, uprn);
@@ -80,11 +122,13 @@ export async function wholesaleRoutes(app: FastifyInstance) {
    * Request a wholesale price quote from Itsi Mobile.
    */
   app.post('/quotes', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
-    const body = req.body as WholesaleQuoteParams;
-    if (!body?.serviceType) return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'serviceType is required' } });
+    const parsed = QuoteBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+    }
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.getQuote(config, body);
+      const data   = await itsiMobileClient.getQuote(config, parsed.data);
       return reply.send({ success: true, data });
     } catch (err) {
       handleWholesaleError(err, reply);
@@ -96,13 +140,13 @@ export async function wholesaleRoutes(app: FastifyInstance) {
    * Submit a service order to Itsi Mobile for provider provisioning.
    */
   app.post('/orders', { preHandler: [requireAuth, writeGuard] }, async (req: any, reply: any) => {
-    const body = req.body as WholesaleOrderPayload;
-    if (!body?.serviceType || !body?.businessAccountId || !body?.businessServiceReference) {
-      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'serviceType, businessAccountId and businessServiceReference are required' } });
+    const parsed = OrderBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
     }
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.createOrder(config, body);
+      const data   = await itsiMobileClient.createOrder(config, parsed.data);
       return reply.code(201).send({ success: true, data });
     } catch (err) {
       handleWholesaleError(err, reply);
@@ -144,13 +188,13 @@ export async function wholesaleRoutes(app: FastifyInstance) {
    * Raise an escalation with Itsi Mobile.
    */
   app.post('/escalations', { preHandler: [requireAuth, writeGuard] }, async (req: any, reply: any) => {
-    const body = req.body as WholesaleEscalationPayload;
-    if (!body?.businessServiceReference || !body?.subject || !body?.description) {
-      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'businessServiceReference, subject and description are required' } });
+    const parsed = EscalationBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
     }
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.createEscalation(config, body);
+      const data   = await itsiMobileClient.createEscalation(config, parsed.data);
       return reply.code(201).send({ success: true, data });
     } catch (err) {
       handleWholesaleError(err, reply);

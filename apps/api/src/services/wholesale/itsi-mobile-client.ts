@@ -74,9 +74,16 @@ export interface WholesaleOrderResult {
 export interface WholesaleOrderStatus {
   orderId: string;
   status: string;
-  providerReference?: string;
+  safeProviderReference?: string;
   lastUpdatedAt: string;
   events: { occurredAt: string; status: string; note?: string }[];
+}
+
+export interface MaskedUpstreamError {
+  upstreamStatus: number;
+  upstreamCode?: string;
+  upstreamMessage?: string;
+  requestId?: string;
 }
 
 export interface WholesaleEscalationPayload {
@@ -132,6 +139,13 @@ function onFailure(enabled: boolean): void {
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
+export class WholesaleConfigError extends Error {
+  constructor(public field: string, message: string) {
+    super(message);
+    this.name = 'WholesaleConfigError';
+  }
+}
+
 export class WholesaleDisabledError extends Error {
   constructor() {
     super('Itsi Mobile wholesale API is disabled (ITSI_MOBILE_WHOLESALE_ENABLED=false)');
@@ -162,18 +176,47 @@ export class WholesaleTimeoutError extends Error {
 
 // ─── Config loader ────────────────────────────────────────────────────────────
 
+export function isWholesaleEnabled(): boolean {
+  return (process.env.ITSI_MOBILE_WHOLESALE_ENABLED ?? 'false') === 'true';
+}
+
 export function loadWholesaleConfig(): WholesaleClientConfig {
+  const timeoutMs     = parseInt(process.env.ITSI_MOBILE_WHOLESALE_TIMEOUT_MS ?? '10000', 10);
+  const retryAttempts = parseInt(process.env.ITSI_MOBILE_WHOLESALE_RETRY_ATTEMPTS ?? '3', 10);
+
+  if (isWholesaleEnabled()) {
+    if (!process.env.ITSI_MOBILE_API_BASE_URL) {
+      throw new WholesaleConfigError('ITSI_MOBILE_API_BASE_URL', 'ITSI_MOBILE_API_BASE_URL is required when ITSI_MOBILE_WHOLESALE_ENABLED=true');
+    }
+    if (!process.env.ITSI_MOBILE_WHOLESALE_API_KEY) {
+      throw new WholesaleConfigError('ITSI_MOBILE_WHOLESALE_API_KEY', 'ITSI_MOBILE_WHOLESALE_API_KEY is required when ITSI_MOBILE_WHOLESALE_ENABLED=true');
+    }
+    if (isNaN(timeoutMs) || timeoutMs < 100) {
+      throw new WholesaleConfigError('ITSI_MOBILE_WHOLESALE_TIMEOUT_MS', 'ITSI_MOBILE_WHOLESALE_TIMEOUT_MS must be a number >= 100');
+    }
+    if (isNaN(retryAttempts) || retryAttempts < 0 || retryAttempts > 10) {
+      throw new WholesaleConfigError('ITSI_MOBILE_WHOLESALE_RETRY_ATTEMPTS', 'ITSI_MOBILE_WHOLESALE_RETRY_ATTEMPTS must be 0–10');
+    }
+  }
+
   return {
     baseUrl:               process.env.ITSI_MOBILE_API_BASE_URL   ?? '',
     apiKey:                process.env.ITSI_MOBILE_WHOLESALE_API_KEY ?? '',
-    timeoutMs:             parseInt(process.env.ITSI_MOBILE_WHOLESALE_TIMEOUT_MS ?? '10000', 10),
-    retryAttempts:         parseInt(process.env.ITSI_MOBILE_WHOLESALE_RETRY_ATTEMPTS ?? '3', 10),
+    timeoutMs:             isNaN(timeoutMs)     ? 10000 : timeoutMs,
+    retryAttempts:         isNaN(retryAttempts) ? 3     : retryAttempts,
     circuitBreakerEnabled: (process.env.ITSI_MOBILE_WHOLESALE_CIRCUIT_BREAKER_ENABLED ?? 'true') === 'true',
   };
 }
 
-export function isWholesaleEnabled(): boolean {
-  return (process.env.ITSI_MOBILE_WHOLESALE_ENABLED ?? 'false') === 'true';
+export function maskUpstreamError(statusCode: number, body: unknown): MaskedUpstreamError {
+  const safe: MaskedUpstreamError = { upstreamStatus: statusCode };
+  if (body && typeof body === 'object') {
+    const b = body as Record<string, unknown>;
+    if (typeof b['code'] === 'string')      safe.upstreamCode    = b['code'];
+    if (typeof b['message'] === 'string')   safe.upstreamMessage = b['message'];
+    if (typeof b['requestId'] === 'string') safe.requestId       = b['requestId'];
+  }
+  return safe;
 }
 
 // ─── HTTP helper ──────────────────────────────────────────────────────────────

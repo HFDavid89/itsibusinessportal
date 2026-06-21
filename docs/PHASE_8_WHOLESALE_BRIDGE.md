@@ -119,6 +119,56 @@ Admin UI page at `/wholesale` with a **Test Connection** button that:
 
 ---
 
+## Phase 8.1 hardening (chore commit)
+
+### Zod validation added to all write/query routes
+
+| Route | Schema |
+|---|---|
+| `GET /availability` | `AvailabilityQuerySchema` — postcode (min 1, max 10), uprn optional |
+| `POST /quotes` | `QuoteBodySchema` — serviceType enum, optional postcode/uprn/productCode/contractTermMonths |
+| `POST /orders` | `OrderBodySchema` — serviceType, businessAccountId, businessServiceReference required; all optional fields max-length capped |
+| `POST /escalations` | `EscalationBodySchema` — businessServiceReference, subject (max 300), description (max 5000), priority enum optional |
+
+All validation failures return `400 VALIDATION_ERROR` with `issues` (Zod `flatten().fieldErrors` shape).
+
+### `WholesaleConfigError` added
+
+When `ITSI_MOBILE_WHOLESALE_ENABLED=true`, `loadWholesaleConfig()` now throws `WholesaleConfigError` if:
+- `ITSI_MOBILE_API_BASE_URL` is missing/empty
+- `ITSI_MOBILE_WHOLESALE_API_KEY` is missing/empty
+- `ITSI_MOBILE_WHOLESALE_TIMEOUT_MS` is NaN or < 100
+- `ITSI_MOBILE_WHOLESALE_RETRY_ATTEMPTS` is NaN or outside 0–10
+
+Route layer maps to `503 WHOLESALE_CONFIG_ERROR` with `{ message, field }`.
+
+### Upstream error body masking
+
+`WholesaleApiError.body` (raw upstream response) is **never returned directly** to the frontend.
+`maskUpstreamError(statusCode, body)` extracts only:
+- `upstreamStatus` — always present
+- `upstreamCode` — only if `string`
+- `upstreamMessage` — only if `string`
+- `requestId` — only if `string`
+
+### `WholesaleOrderStatus.providerReference` renamed
+
+Renamed to `safeProviderReference` to make explicit that any raw provider reference must be sanitized before being stored or displayed.
+
+### Provider coupling confirmed absent
+
+Grep of `apps/api/src/services/wholesale/` and `apps/api/src/routes/wholesale.ts` for `gamma|kcom|ms3|ots`:
+- All matches are **comments only** (`does NOT call Gamma`, `proxies Gamma/KCOM/MS3`)
+- Zero imports, zero function calls, zero SDK references
+
+### Pre-existing type errors fixed
+
+- `authenticate.ts` — `verifyToken` now receives `JWT_SECRET` from env
+- `auth-cookie.ts` — `reply` cast to `any` for `setCookie` (runtime-registered by `@fastify/cookie`)
+- `tickets.ts` — `meta` cast to `any` for Prisma `Json` field
+
+---
+
 ## Hard exclusions (never violate)
 
 - No Gamma, KCOM, MS3, OTS Hero, or provider API calls from Itsi Business code

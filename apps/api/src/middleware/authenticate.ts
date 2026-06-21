@@ -29,7 +29,8 @@ async function extractPayload(request: FastifyRequest): Promise<JwtPayload | nul
   if (!auth?.startsWith('Bearer ')) return null;
   const token = auth.slice(7);
   try {
-    const payload = verifyToken(token) as JwtPayload;
+    const secret  = process.env.JWT_SECRET ?? '';
+    const payload = verifyToken(token, secret) as unknown as JwtPayload;
     return payload ?? null;
   } catch {
     return null;
