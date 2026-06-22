@@ -1,5 +1,4 @@
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
 import { requireAuth } from '../middleware/authenticate';
 import { requirePermission } from '../middleware/rbac';
 import {
@@ -13,43 +12,15 @@ import {
   WholesaleApiError,
   WholesaleTimeoutError,
 } from '../services/wholesale/itsi-mobile-client';
-
-// ─── Zod schemas ──────────────────────────────────────────────────────────────
-
-const AvailabilityQuerySchema = z.object({
-  postcode: z.string().min(1, 'postcode is required').max(10),
-  uprn:     z.string().max(20).optional(),
-});
-
-const QuoteBodySchema = z.object({
-  serviceType:       z.enum(['MOBILE', 'BROADBAND', 'ENERGY']),
-  postcode:          z.string().max(10).optional(),
-  uprn:              z.string().max(20).optional(),
-  productCode:       z.string().max(100).optional(),
-  contractTermMonths: z.number().int().positive().optional(),
-});
-
-const OrderBodySchema = z.object({
-  serviceType:             z.enum(['MOBILE', 'BROADBAND']),
-  businessAccountId:       z.string().min(1),
-  businessServiceReference: z.string().min(1),
-  quoteId:                 z.string().optional(),
-  postcode:                z.string().max(10).optional(),
-  uprn:                    z.string().max(20).optional(),
-  productCode:             z.string().max(100).optional(),
-  contactName:             z.string().max(200).optional(),
-  contactPhone:            z.string().max(30).optional(),
-  contractTermMonths:      z.number().int().positive().optional(),
-  notes:                   z.string().max(2000).optional(),
-});
-
-const EscalationBodySchema = z.object({
-  orderId:                 z.string().optional(),
-  businessServiceReference: z.string().min(1),
-  subject:                 z.string().min(1).max(300),
-  description:             z.string().min(1).max(5000),
-  priority:                z.enum(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']).optional(),
-});
+import {
+  MobileQuoteBodySchema,
+  BroadbandAvailabilityQuerySchema,
+  BroadbandQuoteBodySchema,
+  MobileOrderBodySchema,
+  BroadbandOrderBodySchema,
+  EscalationBodySchema,
+  LegacyGenericOrderBodySchema,
+} from '../services/wholesale/wholesale-payload-schemas';
 
 /**
  * Wholesale routes expose the Itsi Mobile API boundary to internal staff.
@@ -60,6 +31,11 @@ const EscalationBodySchema = z.object({
  * These routes delegate ALL provider interactions to Itsi Mobile wholesale APIs.
  * They do NOT call Gamma, KCOM, MS3, or OTS Hero directly — ever.
  */
+
+function deprecated(reply: any): void {
+  reply.header('X-Deprecated', 'true');
+  reply.header('Deprecation', 'true');
+}
 
 function handleWholesaleError(err: unknown, reply: any): void {
   if (err instanceof WholesaleConfigError) {
@@ -98,86 +74,289 @@ export async function wholesaleRoutes(app: FastifyInstance) {
   });
 
   /**
-   * GET /api/v1/wholesale/availability?postcode=XX1+1XX&uprn=...
-   * Check service availability at a postcode/UPRN via Itsi Mobile.
-   * Itsi Mobile proxies Gamma/KCOM/MS3 — we never call them directly.
+   * GET /api/v1/wholesale/availability/broadband?postcode=&uprn=
+   */
+  app.get('/availability/broadband', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
+    const parsed = BroadbandAvailabilityQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+    }
+    try {
+      const config = loadWholesaleConfig();
+      const data = await itsiMobileClient.getBroadbandAvailability(config, parsed.data.postcode, parsed.data.uprn);
+      return reply.send({ success: true, data });
+    } catch (err) {
+      handleWholesaleError(err, reply);
+    }
+  });
+
+  /**
+   * GET /api/v1/wholesale/products/mobile
+   * GET /api/v1/wholesale/products/broadband
+   */
+  app.get('/products/:family', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
+    const family = req.params.family as string;
+    if (family !== 'mobile' && family !== 'broadband') {
+      return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Unknown product family' } });
+    }
+    const serviceType = family === 'mobile' ? 'MOBILE' : 'BROADBAND';
+    try {
+      const config = loadWholesaleConfig();
+      const data = await itsiMobileClient.getProducts(config, serviceType);
+      return reply.send({ success: true, data });
+    } catch (err) {
+      handleWholesaleError(err, reply);
+    }
+  });
+
+  /**
+   * POST /api/v1/wholesale/quotes/mobile
+   * POST /api/v1/wholesale/quotes/broadband
+   */
+  app.post('/quotes/:family', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
+    const family = req.params.family as string;
+    if (family === 'mobile') {
+      const parsed = MobileQuoteBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+      }
+      try {
+        const config = loadWholesaleConfig();
+        const data = await itsiMobileClient.getMobileQuote(config, parsed.data);
+        return reply.send({ success: true, data });
+      } catch (err) {
+        handleWholesaleError(err, reply);
+      }
+      return;
+    }
+    if (family === 'broadband') {
+      const parsed = BroadbandQuoteBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+      }
+      try {
+        const config = loadWholesaleConfig();
+        const data = await itsiMobileClient.getBroadbandQuote(config, parsed.data);
+        return reply.send({ success: true, data });
+      } catch (err) {
+        handleWholesaleError(err, reply);
+      }
+      return;
+    }
+    return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Unknown quote family' } });
+  });
+
+  /**
+   * POST /api/v1/wholesale/orders/mobile
+   * POST /api/v1/wholesale/orders/broadband
+   */
+  app.post('/orders/:family', { preHandler: [requireAuth, writeGuard] }, async (req: any, reply: any) => {
+    const family = req.params.family as string;
+    const config = loadWholesaleConfig();
+
+    if (family === 'mobile') {
+      const parsed = MobileOrderBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+      }
+      try {
+        const data = await itsiMobileClient.createMobileOrder(config, parsed.data);
+        return reply.code(201).send({ success: true, data });
+      } catch (err) {
+        handleWholesaleError(err, reply);
+      }
+      return;
+    }
+
+    if (family === 'broadband') {
+      const parsed = BroadbandOrderBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+      }
+      try {
+        const data = await itsiMobileClient.createBroadbandOrder(config, parsed.data);
+        return reply.code(201).send({ success: true, data });
+      } catch (err) {
+        handleWholesaleError(err, reply);
+      }
+      return;
+    }
+
+    return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Unknown order family' } });
+  });
+
+  /**
+   * GET /api/v1/wholesale/orders/mobile/:id
+   * GET /api/v1/wholesale/orders/broadband/:id
+   * GET /api/v1/wholesale/orders/mobile/:id/status
+   * GET /api/v1/wholesale/orders/broadband/:id/status
+   */
+  app.get('/orders/:family/:id/status', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
+    const { family, id } = req.params as { family: string; id: string };
+    const config = loadWholesaleConfig();
+    try {
+      const data = family === 'mobile'
+        ? await itsiMobileClient.getMobileOrderStatus(config, id)
+        : family === 'broadband'
+          ? await itsiMobileClient.getBroadbandOrderStatus(config, id)
+          : null;
+      if (!data) {
+        return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Unknown order family' } });
+      }
+      return reply.send({ success: true, data });
+    } catch (err) {
+      handleWholesaleError(err, reply);
+    }
+  });
+
+  app.get('/orders/:family/:id', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
+    const { family, id } = req.params as { family: string; id: string };
+    const config = loadWholesaleConfig();
+    try {
+      const data = family === 'mobile'
+        ? await itsiMobileClient.getMobileOrder(config, id)
+        : family === 'broadband'
+          ? await itsiMobileClient.getBroadbandOrder(config, id)
+          : null;
+      if (!data) {
+        return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Unknown order family' } });
+      }
+      return reply.send({ success: true, data });
+    } catch (err) {
+      handleWholesaleError(err, reply);
+    }
+  });
+
+  // ─── Deprecated generic routes (route to family-specific upstream paths) ───
+
+  /**
+   * @deprecated Use GET /api/v1/wholesale/availability/broadband
    */
   app.get('/availability', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
-    const parsed = AvailabilityQuerySchema.safeParse(req.query);
+    deprecated(reply);
+    const parsed = BroadbandAvailabilityQuerySchema.safeParse(req.query);
     if (!parsed.success) {
       return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
     }
-    const { postcode, uprn } = parsed.data;
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.getAvailability(config, postcode, uprn);
-      return reply.send({ success: true, data });
+      const data = await itsiMobileClient.getBroadbandAvailability(config, parsed.data.postcode, parsed.data.uprn);
+      return reply.send({ success: true, data, _deprecated: 'Use GET /api/v1/wholesale/availability/broadband' });
     } catch (err) {
       handleWholesaleError(err, reply);
     }
   });
 
   /**
-   * POST /api/v1/wholesale/quotes
-   * Request a wholesale price quote from Itsi Mobile.
+   * @deprecated Use POST /api/v1/wholesale/quotes/mobile or /quotes/broadband
    */
   app.post('/quotes', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
-    const parsed = QuoteBodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
+    deprecated(reply);
+    const body = req.body as Record<string, unknown>;
+    const serviceType = body.serviceType;
+    if (serviceType !== 'MOBILE' && serviceType !== 'BROADBAND') {
+      return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'serviceType MOBILE or BROADBAND required' } });
     }
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.getQuote(config, parsed.data);
-      return reply.send({ success: true, data });
+      const data = await itsiMobileClient.getQuote(config, serviceType, body as any);
+      return reply.send({ success: true, data, _deprecated: `Use POST /api/v1/wholesale/quotes/${serviceType.toLowerCase()}` });
     } catch (err) {
       handleWholesaleError(err, reply);
     }
   });
 
   /**
-   * POST /api/v1/wholesale/orders
-   * Submit a service order to Itsi Mobile for provider provisioning.
+   * @deprecated Use POST /api/v1/wholesale/orders/mobile or /orders/broadband
    */
   app.post('/orders', { preHandler: [requireAuth, writeGuard] }, async (req: any, reply: any) => {
-    const parsed = OrderBodySchema.safeParse(req.body);
+    deprecated(reply);
+    const parsed = LegacyGenericOrderBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
     }
+    const { serviceType, ...rest } = parsed.data;
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.createOrder(config, parsed.data);
-      return reply.code(201).send({ success: true, data });
+      const data = serviceType === 'MOBILE'
+        ? await itsiMobileClient.createMobileOrder(config, {
+            businessAccountId: rest.businessAccountId,
+            businessServiceReference: rest.businessServiceReference,
+            quoteId: rest.quoteId,
+            productCode: rest.productCode,
+            contractTermMonths: rest.contractTermMonths,
+            contactName: rest.contactName,
+            contactPhone: rest.contactPhone,
+            notes: rest.notes,
+          })
+        : await itsiMobileClient.createBroadbandOrder(config, {
+            businessAccountId: rest.businessAccountId,
+            businessServiceReference: rest.businessServiceReference,
+            quoteId: rest.quoteId,
+            postcode: rest.postcode!,
+            uprn: rest.uprn,
+            productCode: rest.productCode,
+            installContactName: rest.contactName,
+            installContactPhone: rest.contactPhone,
+            notes: rest.notes,
+          });
+      return reply.code(201).send({
+        success: true,
+        data,
+        _deprecated: `Use POST /api/v1/wholesale/orders/${serviceType.toLowerCase()}`,
+      });
     } catch (err) {
       handleWholesaleError(err, reply);
     }
   });
 
   /**
-   * GET /api/v1/wholesale/orders/:id
-   * Get a wholesale order by ID.
+   * @deprecated Use GET /api/v1/wholesale/orders/:family/:id — requires ?serviceType=MOBILE|BROADBAND
    */
   app.get('/orders/:id', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
     const { id } = req.params as { id: string };
+    const serviceType = (req.query as { serviceType?: string }).serviceType;
+    if (serviceType !== 'MOBILE' && serviceType !== 'BROADBAND') {
+      return reply.code(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'serviceType query param MOBILE or BROADBAND required on deprecated route' },
+      });
+    }
+    deprecated(reply);
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.getOrder(config, id);
-      return reply.send({ success: true, data });
+      const data = await itsiMobileClient.getOrder(config, serviceType, id);
+      return reply.send({
+        success: true,
+        data,
+        _deprecated: `Use GET /api/v1/wholesale/orders/${serviceType.toLowerCase()}/${id}`,
+      });
     } catch (err) {
       handleWholesaleError(err, reply);
     }
   });
 
   /**
-   * GET /api/v1/wholesale/orders/:id/status
-   * Poll the live status of a wholesale order from Itsi Mobile.
+   * @deprecated Use GET /api/v1/wholesale/orders/:family/:id/status — requires ?serviceType=
    */
   app.get('/orders/:id/status', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
     const { id } = req.params as { id: string };
+    const serviceType = (req.query as { serviceType?: string }).serviceType;
+    if (serviceType !== 'MOBILE' && serviceType !== 'BROADBAND') {
+      return reply.code(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'serviceType query param MOBILE or BROADBAND required on deprecated route' },
+      });
+    }
+    deprecated(reply);
     try {
       const config = loadWholesaleConfig();
-      const data   = await itsiMobileClient.getOrderStatus(config, id);
-      return reply.send({ success: true, data });
+      const data = await itsiMobileClient.getOrderStatus(config, serviceType, id);
+      return reply.send({
+        success: true,
+        data,
+        _deprecated: `Use GET /api/v1/wholesale/orders/${serviceType.toLowerCase()}/${id}/status`,
+      });
     } catch (err) {
       handleWholesaleError(err, reply);
     }
@@ -185,7 +364,7 @@ export async function wholesaleRoutes(app: FastifyInstance) {
 
   /**
    * POST /api/v1/wholesale/escalations
-   * Raise an escalation with Itsi Mobile.
+   * Shared route — serviceType required in body.
    */
   app.post('/escalations', { preHandler: [requireAuth, writeGuard] }, async (req: any, reply: any) => {
     const parsed = EscalationBodySchema.safeParse(req.body);

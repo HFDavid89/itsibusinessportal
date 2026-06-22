@@ -14,7 +14,8 @@ import {
   WholesaleCircuitOpenError,
   WholesaleApiError,
   WholesaleTimeoutError,
-  type WholesaleOrderPayload,
+  type MobileWholesaleOrderPayload,
+  type BroadbandWholesaleOrderPayload,
 } from './itsi-mobile-client';
 import {
   mapWholesaleLinkStatus,
@@ -129,21 +130,30 @@ function buildOrderPayload(
     uprn?: string | null;
   },
   body: z.infer<typeof RequestWholesaleOrderSchema>,
-): WholesaleOrderPayload {
-  return {
-    serviceType,
+): MobileWholesaleOrderPayload | BroadbandWholesaleOrderPayload {
+  const shared = {
     businessAccountId: service.accountId,
     businessServiceReference: service.serviceReference,
     quoteId: body.quoteId,
     productCode: body.productCode ?? service.catalogueItem?.sku,
-    contactName: body.contactName,
-    contactPhone: body.contactPhone,
     notes: body.notes,
     contractTermMonths: service.catalogueItem?.contractTermMonths ?? undefined,
-    ...(serviceType === 'BROADBAND' ? {
-      postcode: service.postcode!,
-      uprn: service.uprn ?? undefined,
-    } : {}),
+  };
+
+  if (serviceType === 'MOBILE') {
+    return {
+      ...shared,
+      contactName: body.contactName,
+      contactPhone: body.contactPhone,
+    };
+  }
+
+  return {
+    ...shared,
+    postcode: service.postcode!,
+    uprn: service.uprn ?? undefined,
+    installContactName: body.contactName,
+    installContactPhone: body.contactPhone,
   };
 }
 
@@ -172,12 +182,9 @@ export async function requestWholesaleOrderForService(
 
   const config = loadWholesaleConfig();
   const payload = buildOrderPayload(serviceType, service, body);
-  const orderResult = await itsiMobileClient.createOrder(config, payload);
+  const orderResult = await itsiMobileClient.createOrder(config, serviceType, payload);
 
-  const raw = orderResult.raw as Record<string, unknown> | undefined;
-  const serviceOrderId = typeof raw?.serviceOrderId === 'string' ? raw.serviceOrderId
-    : typeof raw?.itsiMobileServiceOrderId === 'string' ? raw.itsiMobileServiceOrderId
-    : null;
+  const serviceOrderId = orderResult.serviceOrderId ?? null;
 
   const linkStatus = mapWholesaleLinkStatus(orderResult.status);
   const newRetailStatus = service.status === 'DRAFT' ? 'REQUESTED' : service.status;
@@ -314,7 +321,7 @@ export async function refreshWholesaleStatusForService(
   }
 
   const config = loadWholesaleConfig();
-  const statusResult = await itsiMobileClient.getOrderStatus(config, orderId);
+  const statusResult = await itsiMobileClient.getOrderStatus(config, serviceType, orderId);
   const sanitized = sanitizeStatusResponse(statusResult);
   const linkStatus = mapWholesaleLinkStatus(statusResult.status);
   const promoteActive = shouldPromoteRetailToActive(statusResult.status, service.status);

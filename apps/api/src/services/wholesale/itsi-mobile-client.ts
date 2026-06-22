@@ -4,9 +4,21 @@
  * RULE: Itsi Business owns the business customer.
  *       Itsi Mobile owns the wholesale/provider fulfilment.
  *
- * This client calls Itsi Mobile wholesale APIs ONLY.
- * It does NOT call Gamma, KCOM, MS3, OTS Hero, or any provider API directly.
+ * Mobile and Broadband use separate upstream route families.
+ * This client does NOT call Gamma, KCOM, MS3, OTS Hero, or any provider API directly.
  */
+
+import {
+  orderCreatePath,
+  orderGetPath,
+  orderStatusPath,
+  productsPath,
+  quotePath,
+  WHOLESALE_API_PATHS,
+  type WholesaleServiceFamily,
+} from './wholesale-paths';
+
+export type { WholesaleServiceFamily };
 
 export interface WholesaleClientConfig {
   baseUrl: string;
@@ -23,56 +35,88 @@ export interface WholesalePingResult {
   message?: string;
 }
 
-export interface WholesaleAvailabilityResult {
+export interface WholesaleProduct {
+  productCode: string;
+  name: string;
+  description?: string;
+  contractTermMonths?: number;
+  accessTechnology?: string;
+}
+
+export interface WholesaleBroadbandAvailabilityResult {
   postcode: string;
   uprn?: string;
   available: boolean;
-  serviceTypes: string[];
+  accessTechnologies: string[];
   leadTimeDays?: number;
-  raw?: unknown;
 }
 
-export interface WholesaleQuoteParams {
-  serviceType: 'MOBILE' | 'BROADBAND' | 'ENERGY';
-  postcode?: string;
+export interface MobileWholesaleQuoteParams {
+  productCode?: string;
+  contractTermMonths?: number;
+  simType?: string;
+  simQuantity?: number;
+  userCount?: number;
+}
+
+export interface BroadbandWholesaleQuoteParams {
+  postcode: string;
   uprn?: string;
   productCode?: string;
   contractTermMonths?: number;
+  accessTechnology?: string;
 }
 
 export interface WholesaleQuoteResult {
   quoteId: string;
-  serviceType: string;
+  serviceType: WholesaleServiceFamily;
   wholesalePricePence: number;
   setupCostPence: number;
   contractTermMonths: number;
   expiresAt: string;
-  raw?: unknown;
 }
 
-export interface WholesaleOrderPayload {
-  serviceType: 'MOBILE' | 'BROADBAND';
+export interface MobileWholesaleOrderPayload {
   businessAccountId: string;
   businessServiceReference: string;
   quoteId?: string;
-  postcode?: string;
-  uprn?: string;
   productCode?: string;
+  contractTermMonths?: number;
+  simType?: string;
+  simQuantity?: number;
   contactName?: string;
   contactPhone?: string;
-  contractTermMonths?: number;
+  contactEmail?: string;
+  notes?: string;
+}
+
+export interface BroadbandWholesaleOrderPayload {
+  businessAccountId: string;
+  businessServiceReference: string;
+  quoteId?: string;
+  postcode: string;
+  uprn?: string;
+  productCode?: string;
+  accessTechnology?: string;
+  installContactName?: string;
+  installContactPhone?: string;
+  installContactEmail?: string;
   notes?: string;
 }
 
 export interface WholesaleOrderResult {
   orderId: string;
+  serviceType: WholesaleServiceFamily;
   status: string;
+  serviceOrderId?: string;
+  safeProviderReference?: string;
+  message?: string;
   estimatedProvisionDate?: string;
-  raw?: unknown;
 }
 
 export interface WholesaleOrderStatus {
   orderId: string;
+  serviceType: WholesaleServiceFamily;
   status: string;
   safeProviderReference?: string;
   lastUpdatedAt: string;
@@ -87,6 +131,7 @@ export interface MaskedUpstreamError {
 }
 
 export interface WholesaleEscalationPayload {
+  serviceType: WholesaleServiceFamily;
   orderId?: string;
   businessServiceReference: string;
   subject: string;
@@ -100,7 +145,7 @@ export interface WholesaleEscalationResult {
   createdAt: string;
 }
 
-// ─── Circuit breaker state ────────────────────────────────────────────────────
+// ─── Circuit breaker ──────────────────────────────────────────────────────────
 
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
@@ -174,7 +219,7 @@ export class WholesaleTimeoutError extends Error {
   }
 }
 
-// ─── Config loader ────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 export function isWholesaleEnabled(): boolean {
   return (process.env.ITSI_MOBILE_WHOLESALE_ENABLED ?? 'false') === 'true';
@@ -219,6 +264,49 @@ export function maskUpstreamError(statusCode: number, body: unknown): MaskedUpst
   return safe;
 }
 
+function normalizeOrderResult(
+  serviceType: WholesaleServiceFamily,
+  data: Record<string, unknown>,
+): WholesaleOrderResult {
+  return {
+    orderId: String(data.orderId ?? data.id ?? ''),
+    serviceType: (data.serviceType as WholesaleServiceFamily) ?? serviceType,
+    status: String(data.status ?? 'UNKNOWN'),
+    serviceOrderId: typeof data.serviceOrderId === 'string' ? data.serviceOrderId
+      : typeof data.itsiMobileServiceOrderId === 'string' ? data.itsiMobileServiceOrderId
+      : undefined,
+    safeProviderReference: typeof data.safeProviderReference === 'string' ? data.safeProviderReference : undefined,
+    message: typeof data.message === 'string' ? data.message : undefined,
+    estimatedProvisionDate: typeof data.estimatedProvisionDate === 'string' ? data.estimatedProvisionDate : undefined,
+  };
+}
+
+function normalizeOrderStatus(
+  serviceType: WholesaleServiceFamily,
+  orderId: string,
+  data: Record<string, unknown>,
+): WholesaleOrderStatus {
+  const events = Array.isArray(data.events)
+    ? data.events.map((e) => {
+        const ev = e as Record<string, unknown>;
+        return {
+          occurredAt: String(ev.occurredAt ?? ev.createdAt ?? ''),
+          status: String(ev.status ?? ''),
+          note: typeof ev.note === 'string' ? ev.note : undefined,
+        };
+      })
+    : [];
+
+  return {
+    orderId: String(data.orderId ?? orderId),
+    serviceType: (data.serviceType as WholesaleServiceFamily) ?? serviceType,
+    status: String(data.status ?? 'UNKNOWN'),
+    safeProviderReference: typeof data.safeProviderReference === 'string' ? data.safeProviderReference : undefined,
+    lastUpdatedAt: String(data.lastUpdatedAt ?? data.updatedAt ?? new Date().toISOString()),
+    events,
+  };
+}
+
 // ─── HTTP helper ──────────────────────────────────────────────────────────────
 
 async function wholesaleFetch<T>(
@@ -252,7 +340,6 @@ async function wholesaleFetch<T>(
     if (!res.ok) {
       const errorBody = await res.json().catch(() => null);
       onFailure(config.circuitBreakerEnabled);
-      // Retry on 5xx only
       if (res.status >= 500 && attempts > 1) {
         return wholesaleFetch<T>(config, method, path, body, attempts - 1);
       }
@@ -282,91 +369,143 @@ async function wholesaleFetch<T>(
 // ─── Public client ────────────────────────────────────────────────────────────
 
 export const itsiMobileClient = {
-  /**
-   * Ping the Itsi Mobile wholesale API. Used for connectivity tests.
-   */
   async ping(config: WholesaleClientConfig): Promise<WholesalePingResult> {
     const start = Date.now();
     try {
-      const data = await wholesaleFetch<{ version?: string; message?: string }>(config, 'GET', '/api/v1/health');
+      const data = await wholesaleFetch<{ version?: string; message?: string }>(config, 'GET', WHOLESALE_API_PATHS.health);
       return { ok: true, latencyMs: Date.now() - start, version: data.version, message: data.message };
     } catch (err) {
       return { ok: false, latencyMs: Date.now() - start, message: (err as Error).message };
     }
   },
 
-  /**
-   * Check broadband / mobile availability at a postcode/UPRN via Itsi Mobile.
-   * Itsi Mobile proxies Gamma/KCOM/MS3 — we never call them directly.
-   */
-  async getAvailability(
+  async getProducts(config: WholesaleClientConfig, serviceType: WholesaleServiceFamily): Promise<WholesaleProduct[]> {
+    const data = await wholesaleFetch<{ products?: WholesaleProduct[] } | WholesaleProduct[]>(
+      config, 'GET', productsPath(serviceType),
+    );
+    return Array.isArray(data) ? data : (data.products ?? []);
+  },
+
+  async getBroadbandAvailability(
     config: WholesaleClientConfig,
     postcode: string,
     uprn?: string,
-  ): Promise<WholesaleAvailabilityResult> {
+  ): Promise<WholesaleBroadbandAvailabilityResult> {
     const qs = new URLSearchParams({ postcode });
     if (uprn) qs.set('uprn', uprn);
-    return wholesaleFetch<WholesaleAvailabilityResult>(config, 'GET', `/api/v1/wholesale/availability?${qs}`);
+    return wholesaleFetch<WholesaleBroadbandAvailabilityResult>(
+      config, 'GET', `${WHOLESALE_API_PATHS.broadbandAvailability}?${qs}`,
+    );
   },
 
-  /**
-   * Request a wholesale quote from Itsi Mobile for a given service type.
-   */
+  async getMobileQuote(config: WholesaleClientConfig, params: MobileWholesaleQuoteParams): Promise<WholesaleQuoteResult> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'POST', WHOLESALE_API_PATHS.mobileQuote, params);
+    return {
+      quoteId: String(data.quoteId ?? ''),
+      serviceType: 'MOBILE',
+      wholesalePricePence: Number(data.wholesalePricePence ?? 0),
+      setupCostPence: Number(data.setupCostPence ?? 0),
+      contractTermMonths: Number(data.contractTermMonths ?? 0),
+      expiresAt: String(data.expiresAt ?? ''),
+    };
+  },
+
+  async getBroadbandQuote(config: WholesaleClientConfig, params: BroadbandWholesaleQuoteParams): Promise<WholesaleQuoteResult> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'POST', WHOLESALE_API_PATHS.broadbandQuote, params);
+    return {
+      quoteId: String(data.quoteId ?? ''),
+      serviceType: 'BROADBAND',
+      wholesalePricePence: Number(data.wholesalePricePence ?? 0),
+      setupCostPence: Number(data.setupCostPence ?? 0),
+      contractTermMonths: Number(data.contractTermMonths ?? 0),
+      expiresAt: String(data.expiresAt ?? ''),
+    };
+  },
+
   async getQuote(
     config: WholesaleClientConfig,
-    params: WholesaleQuoteParams,
+    serviceType: WholesaleServiceFamily,
+    params: MobileWholesaleQuoteParams | BroadbandWholesaleQuoteParams,
   ): Promise<WholesaleQuoteResult> {
-    return wholesaleFetch<WholesaleQuoteResult>(config, 'POST', '/api/v1/wholesale/quotes', params);
+    return serviceType === 'MOBILE'
+      ? this.getMobileQuote(config, params as MobileWholesaleQuoteParams)
+      : this.getBroadbandQuote(config, params as BroadbandWholesaleQuoteParams);
   },
 
-  /**
-   * Submit a wholesale service order to Itsi Mobile.
-   * Itsi Mobile will handle provider provisioning (Gamma, KCOM, etc.).
-   */
+  async createMobileOrder(config: WholesaleClientConfig, payload: MobileWholesaleOrderPayload): Promise<WholesaleOrderResult> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'POST', WHOLESALE_API_PATHS.mobileOrders, payload);
+    return normalizeOrderResult('MOBILE', data);
+  },
+
+  async createBroadbandOrder(config: WholesaleClientConfig, payload: BroadbandWholesaleOrderPayload): Promise<WholesaleOrderResult> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'POST', WHOLESALE_API_PATHS.broadbandOrders, payload);
+    return normalizeOrderResult('BROADBAND', data);
+  },
+
   async createOrder(
     config: WholesaleClientConfig,
-    payload: WholesaleOrderPayload,
+    serviceType: WholesaleServiceFamily,
+    payload: MobileWholesaleOrderPayload | BroadbandWholesaleOrderPayload,
   ): Promise<WholesaleOrderResult> {
-    return wholesaleFetch<WholesaleOrderResult>(config, 'POST', '/api/v1/wholesale/orders', payload);
+    return serviceType === 'MOBILE'
+      ? this.createMobileOrder(config, payload as MobileWholesaleOrderPayload)
+      : this.createBroadbandOrder(config, payload as BroadbandWholesaleOrderPayload);
   },
 
-  /**
-   * Get a wholesale order by ID.
-   */
-  async getOrder(
-    config: WholesaleClientConfig,
-    orderId: string,
-  ): Promise<WholesaleOrderResult> {
-    return wholesaleFetch<WholesaleOrderResult>(config, 'GET', `/api/v1/wholesale/orders/${orderId}`);
+  async getMobileOrder(config: WholesaleClientConfig, orderId: string): Promise<WholesaleOrderResult> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'GET', WHOLESALE_API_PATHS.mobileOrder(orderId));
+    return normalizeOrderResult('MOBILE', data);
   },
 
-  /**
-   * Poll the live status of a wholesale order from Itsi Mobile.
-   */
+  async getBroadbandOrder(config: WholesaleClientConfig, orderId: string): Promise<WholesaleOrderResult> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'GET', WHOLESALE_API_PATHS.broadbandOrder(orderId));
+    return normalizeOrderResult('BROADBAND', data);
+  },
+
+  async getOrder(config: WholesaleClientConfig, serviceType: WholesaleServiceFamily, orderId: string): Promise<WholesaleOrderResult> {
+    return serviceType === 'MOBILE'
+      ? this.getMobileOrder(config, orderId)
+      : this.getBroadbandOrder(config, orderId);
+  },
+
+  async getMobileOrderStatus(config: WholesaleClientConfig, orderId: string): Promise<WholesaleOrderStatus> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'GET', WHOLESALE_API_PATHS.mobileOrderStatus(orderId));
+    return normalizeOrderStatus('MOBILE', orderId, data);
+  },
+
+  async getBroadbandOrderStatus(config: WholesaleClientConfig, orderId: string): Promise<WholesaleOrderStatus> {
+    const data = await wholesaleFetch<Record<string, unknown>>(config, 'GET', WHOLESALE_API_PATHS.broadbandOrderStatus(orderId));
+    return normalizeOrderStatus('BROADBAND', orderId, data);
+  },
+
   async getOrderStatus(
     config: WholesaleClientConfig,
+    serviceType: WholesaleServiceFamily,
     orderId: string,
   ): Promise<WholesaleOrderStatus> {
-    return wholesaleFetch<WholesaleOrderStatus>(config, 'GET', `/api/v1/wholesale/orders/${orderId}/status`);
+    return serviceType === 'MOBILE'
+      ? this.getMobileOrderStatus(config, orderId)
+      : this.getBroadbandOrderStatus(config, orderId);
   },
 
-  /**
-   * Raise a wholesale escalation with Itsi Mobile.
-   */
-  async createEscalation(
-    config: WholesaleClientConfig,
-    payload: WholesaleEscalationPayload,
-  ): Promise<WholesaleEscalationResult> {
-    return wholesaleFetch<WholesaleEscalationResult>(config, 'POST', '/api/v1/wholesale/escalations', payload);
+  async createEscalation(config: WholesaleClientConfig, payload: WholesaleEscalationPayload): Promise<WholesaleEscalationResult> {
+    return wholesaleFetch<WholesaleEscalationResult>(config, 'POST', WHOLESALE_API_PATHS.escalations, payload);
   },
 
-  /**
-   * Get an escalation by ID.
-   */
-  async getEscalation(
-    config: WholesaleClientConfig,
-    escalationId: string,
-  ): Promise<WholesaleEscalationResult> {
-    return wholesaleFetch<WholesaleEscalationResult>(config, 'GET', `/api/v1/wholesale/escalations/${escalationId}`);
+  async getEscalation(config: WholesaleClientConfig, escalationId: string): Promise<WholesaleEscalationResult> {
+    return wholesaleFetch<WholesaleEscalationResult>(config, 'GET', WHOLESALE_API_PATHS.escalation(escalationId));
+  },
+
+  /** Resolve upstream path for a service family — exposed for contract tests. */
+  resolveOrderCreatePath(serviceType: WholesaleServiceFamily): string {
+    return orderCreatePath(serviceType);
+  },
+
+  resolveOrderStatusPath(serviceType: WholesaleServiceFamily, orderId: string): string {
+    return orderStatusPath(serviceType, orderId);
+  },
+
+  resolveQuotePath(serviceType: WholesaleServiceFamily): string {
+    return quotePath(serviceType);
   },
 };

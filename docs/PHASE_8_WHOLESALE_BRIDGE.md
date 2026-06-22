@@ -40,11 +40,18 @@ Typed HTTP client for the Itsi Mobile wholesale API.
 | Method | Itsi Mobile endpoint | Description |
 |---|---|---|
 | `ping(config)` | `GET /api/v1/health` | Connectivity test with latency |
-| `getAvailability(config, postcode, uprn?)` | `GET /api/v1/wholesale/availability` | Service availability check |
-| `getQuote(config, params)` | `POST /api/v1/wholesale/quotes` | Wholesale price quote |
-| `createOrder(config, payload)` | `POST /api/v1/wholesale/orders` | Submit service order |
-| `getOrder(config, orderId)` | `GET /api/v1/wholesale/orders/:id` | Get order by ID |
-| `getOrderStatus(config, orderId)` | `GET /api/v1/wholesale/orders/:id/status` | Poll live order status |
+| Client methods | Upstream path (Phase 13A — family-specific) |
+|---|---|
+| `ping()` | `GET /api/v1/health` |
+| `getBroadbandAvailability()` | `GET /api/v1/wholesale/availability/broadband` |
+| `getProducts(config, MOBILE\|BROADBAND)` | `GET /api/v1/wholesale/products/mobile` or `/broadband` |
+| `getMobileQuote()` / `getBroadbandQuote()` | `POST /api/v1/wholesale/quotes/mobile` or `/broadband` |
+| `createMobileOrder()` / `createBroadbandOrder()` | `POST /api/v1/wholesale/orders/mobile` or `/broadband` |
+| `getMobileOrder()` / `getBroadbandOrder()` | `GET /api/v1/wholesale/orders/mobile/:id` or `/broadband/:id` |
+| `getMobileOrderStatus()` / `getBroadbandOrderStatus()` | `GET .../orders/mobile/:id/status` or `/broadband/:id/status` |
+| `createEscalation()` (requires `serviceType`) | `POST /api/v1/wholesale/escalations` |
+
+> **Phase 13A:** Generic `/wholesale/orders` and `/wholesale/quotes` are deprecated. See `docs/WHOLESALE_API_CONTRACT.md`.
 | `createEscalation(config, payload)` | `POST /api/v1/wholesale/escalations` | Raise escalation |
 | `getEscalation(config, escalationId)` | `GET /api/v1/wholesale/escalations/:id` | Get escalation by ID |
 

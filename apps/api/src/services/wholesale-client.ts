@@ -1,4 +1,7 @@
 /**
+ * @deprecated Use apps/api/src/services/wholesale/itsi-mobile-client.ts instead.
+ * Legacy placeholder with different auth headers and paths — not used in production.
+ *
  * Itsi Mobile Wholesale API Client — Placeholder
  *
  * RULE: Itsi Business owns the business customer.
@@ -18,14 +21,27 @@
  *   ITSI_MOBILE_WHOLESALE_TIMEOUT_MS — Request timeout in ms (default: 10000)
  */
 
-import type {
-  WholesaleOrderRequest,
-  WholesaleOrderResponse,
-  WholesaleOrderStatusResponse,
-  WholesaleAddressResult,
-  WholesaleEscalationRequest,
-  WholesaleEscalationResponse,
-} from '@itsi-business/types';
+/** @deprecated local types — file unused; see itsi-mobile-client.ts */
+interface WholesaleOrderRequest {
+  type: 'MOBILE' | 'BROADBAND';
+  sourceOrderId: string;
+  sourceAccountId: string;
+  postcode: string;
+  tariffId: string;
+}
+interface WholesaleOrderResponse { id: string; reference: string; status: string; createdAt: string; }
+interface WholesaleOrderStatusResponse { id: string; reference: string; status: string; statusDescription: string; updatedAt: string; }
+interface WholesaleAddressResult { uprn: string; addressLine1: string; city: string; postcode: string; providers: string[]; }
+interface WholesaleEscalationRequest {
+  businessTicketId: string;
+  businessTicketReference: string;
+  businessAccountId: string;
+  serviceType: 'MOBILE' | 'BROADBAND' | 'GENERAL';
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  subject: string;
+  notes: string;
+}
+interface WholesaleEscalationResponse { id: string; itsiMobileTicketId: string; itsiMobileTicketReference: string; status: string; createdAt: string; }
 
 function getConfig() {
   return {

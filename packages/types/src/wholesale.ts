@@ -1,73 +1,95 @@
 /**
  * Types for the Itsi Business → Itsi Mobile wholesale API boundary.
  *
- * RULE: Itsi Business owns the business customer.
- *       Itsi Mobile owns the wholesale/provider fulfilment.
- *
- * These types represent the contract between the two systems.
+ * Mobile and Broadband use separate route families and strongly typed payloads.
  * Do NOT add provider-specific fields here.
  */
 
-export type WholesaleOrderType = 'MOBILE' | 'BROADBAND';
-export type WholesaleOrderStatus =
-  | 'WHOLESALE_PENDING'
-  | 'WHOLESALE_ACCEPTED'
-  | 'WHOLESALE_IN_PROGRESS'
-  | 'WHOLESALE_COMPLETE'
-  | 'WHOLESALE_FAILED'
-  | 'WHOLESALE_CANCELLED';
+export type WholesaleServiceFamily = 'MOBILE' | 'BROADBAND';
 
-export interface WholesaleOrderRequest {
-  type: WholesaleOrderType;
-  sourceOrderId: string;
-  sourceAccountId: string;
+export interface WholesaleOrderResult {
+  orderId: string;
+  serviceType: WholesaleServiceFamily;
+  status: string;
+  serviceOrderId?: string;
+  safeProviderReference?: string;
+  message?: string;
+}
+
+export interface WholesaleOrderStatusResult {
+  orderId: string;
+  serviceType: WholesaleServiceFamily;
+  status: string;
+  safeProviderReference?: string;
+  lastUpdatedAt: string;
+  events: Array<{ occurredAt: string; status: string; note?: string }>;
+}
+
+export interface MobileWholesaleQuoteRequest {
+  productCode?: string;
+  contractTermMonths?: number;
+  simType?: string;
+  simQuantity?: number;
+  userCount?: number;
+}
+
+export interface BroadbandWholesaleQuoteRequest {
   postcode: string;
   uprn?: string;
-  tariffId: string;
-  simSerialNumber?: string;
-  requestedPortDate?: string;
+  productCode?: string;
+  contractTermMonths?: number;
+  accessTechnology?: string;
+}
+
+export interface MobileWholesaleOrderRequest {
+  businessAccountId: string;
+  businessServiceReference: string;
+  quoteId?: string;
+  productCode?: string;
+  contractTermMonths?: number;
+  simType?: string;
+  simQuantity?: number;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   notes?: string;
 }
 
-export interface WholesaleOrderResponse {
-  id: string;
-  reference: string;
-  status: WholesaleOrderStatus;
-  createdAt: string;
-}
-
-export interface WholesaleOrderStatusResponse {
-  id: string;
-  reference: string;
-  status: WholesaleOrderStatus;
-  statusDescription: string;
-  updatedAt: string;
-}
-
-export interface WholesaleAddressResult {
-  uprn: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
+export interface BroadbandWholesaleOrderRequest {
+  businessAccountId: string;
+  businessServiceReference: string;
+  quoteId?: string;
   postcode: string;
-  providers: string[];
+  uprn?: string;
+  productCode?: string;
+  accessTechnology?: string;
+  installContactName?: string;
+  installContactPhone?: string;
+  installContactEmail?: string;
+  notes?: string;
 }
 
 export interface WholesaleEscalationRequest {
-  businessTicketId: string;
-  businessTicketReference: string;
-  businessAccountId: string;
-  serviceType: 'MOBILE' | 'BROADBAND' | 'GENERAL';
-  serviceReference?: string;
-  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  serviceType: WholesaleServiceFamily;
+  orderId?: string;
+  businessServiceReference: string;
   subject: string;
-  notes: string;
+  description: string;
+  priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
 }
 
 export interface WholesaleEscalationResponse {
-  id: string;
-  itsiMobileTicketId: string;
-  itsiMobileTicketReference: string;
+  escalationId: string;
   status: string;
   createdAt: string;
 }
+
+/** Reserved mobile fields — not implemented until Itsi Mobile supports them */
+export type MobileWholesaleFutureFields =
+  | 'pac' | 'stac' | 'portingDate' | 'spendCapPence'
+  | 'roamingEnabled' | 'internationalBarred' | 'replacementSim';
+
+/** Reserved broadband fields — not implemented until Itsi Mobile supports them */
+export type BroadbandWholesaleFutureFields =
+  | 'appointmentSlotId' | 'routerRequired' | 'staticIpRequired'
+  | 'installNotes' | 'careLevel' | 'siteContactId';
