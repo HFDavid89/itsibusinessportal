@@ -10,6 +10,7 @@ export const ADMIN_NAV_GROUPS: NavGroupDef[] = [
     label: 'Admin',
     items: [
       { href: '/', label: 'Overview', exactMatch: true },
+      { href: '/reports', label: 'Reports' },
       { href: '/settings', label: 'Settings' },
       { href: '/staff', label: 'Staff' },
       { href: '/wholesale', label: 'Wholesale Connection' },

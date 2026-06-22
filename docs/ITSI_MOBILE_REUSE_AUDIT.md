@@ -396,3 +396,25 @@
 - Phase 15 closed at `5c738bb` — no Wave 4 required
 - Phase 16 applied boundary hardening, API transport fixes, deferred register, UX audit
 - Remaining visual consistency (status badges, legacy portal pages) deferred to Phase 17
+
+---
+
+## Phase 17 — Management reporting and operational dashboards
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Admin/platform dashboard KPIs | **Refocus** | Admin `/reports` overview — real DB aggregates, not demo MRR | Platform-wide reseller metrics |
+| Billing ageing / overdue panels | **Refocus** | `/reports/billing` — ageing buckets, top overdue, service-type totals | Wholesale reconciliation, payment/PDF metrics |
+| Service mix / subscription counts | **Refocus** | `/reports/services` — mobile/broadband/energy status distributions | Live SIM/network status from provider |
+| Support queue analytics | **Refocus** | `/reports/desk` — priority/category, oldest open | Internal notes, provider payloads |
+| Work queue / SLA cockpit | **Refocus** | `/reports/work-items` — breached, due soon, by type | Portal work item visibility |
+| Energy renewal pipeline | **Refocus** | `/reports/energy` — manual Fidelity tracking labels | Supplier billing, live Fidelity API |
+| Product enquiry funnel | **Refocus** | `/reports/products` — catalogue quality + open enquiries | Wholesale order creation from reports |
+| Account health scoring | **Refocus** | `/reports/accounts` + shared `classifyAccountHealth()` | Consumer LTV / churn models |
+| `CompactKpiChip` / metric cards | **Reuse** | `@itsi-business/ui` `ReportKpiGrid`, `ReportSection` | Charting libraries |
+| Cross-app drill-down links | **Reuse** | `WORKSPACE_URLS` + `DrilldownLinkList` | Portal links to staff reports |
+| Wholesale link status counts | **Refocus (simulated)** | Local `ItsiMobileWholesaleServiceLink` only — labelled until 13B-2 | Live provider order metrics |
+| Management reports in portal | **Skip (hard excluded)** | `/api/v1/reports/*` staff realm + RBAC | Portal dashboard account scope only |
+| Real MRR / AI insight demos | **Skip (hard excluded)** | 30-day activity counts; trend limitation documented | Hard excluded |
+| Online payment / PDF reporting | **Skip (deferred)** | Footer/deferred register reference | Payment integration phase |
+| Live network control reporting | **Skip (blocked)** | Not in Phase 17 | Blocked until 13B-2 |

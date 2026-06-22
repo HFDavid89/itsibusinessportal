@@ -1,7 +1,7 @@
 # Deferred Feature Register
 
 > Itsi Business Platform — intentionally deferred capabilities  
-> Last updated: Phase 16 closeout (post `5c738bb`)
+> Last updated: Phase 17 closeout
 
 This register documents features that are **not missing by accident**. Each item is blocked, out of scope, or awaiting an external dependency. UI must not present these as fake working controls.
 
@@ -79,12 +79,26 @@ This register documents features that are **not missing by accident**. Each item
 |---------|-----------------|------------|---------------------|------------------|------------------|----------------|
 | Company profile self-edit | Requires approval workflow design | Portal account management | Disabled in settings | CRM account edit | Contact details edit allowed | Portal account phase |
 | Work items / SLA in portal | Staff-only operational data | Boundary rule | Never | Full work queue in Services app | Support tickets | N/A — permanent boundary |
+| Management reporting / control tower | Staff-only business KPIs and account health | Boundary rule | Never | Admin `/reports` + `/api/v1/reports/*` | Portal dashboard (account-scoped only) | N/A — permanent boundary |
 | Wholesale/provider jargon in portal | Customer-safe copy required | Copy guidelines | Sanitized labels only | Full detail in staff apps | `labels.ts` + API sanitization | Ongoing copy review |
+
+---
+
+## Management reporting (Phase 17)
+
+| Feature | Reason deferred | Dependency | Customer visibility | Staff visibility | Safe alternative | Unlock condition |
+|---------|-----------------|------------|---------------------|------------------|------------------|----------------|
+| Real wholesale billing reconciliation in reports | Itsi Mobile wholesale billing not production-real | 13B-2 billing E2E | Never | Billing report without reconciliation KPIs | Manual retail invoicing + ageing | `ITSI_MOBILE_WHOLESALE_BILLING_ENABLED` + E2E |
+| Live network control reporting | No live provider status feed | 13B-2 | Never | Services report — local wholesale link counts only | Support tickets / work items | 13B-2 E2E |
+| Online payment / PDF metrics in reports | Payment/PDF not integrated | Payment + PDF phases | Never | Not shown in billing report | Browser invoice view | Payment/PDF phases |
+| Real Itsi Mobile lifecycle trend reporting | Historical provider data not in Business DB | 13B-2 + data retention | Never | 30-day activity counts in overview | Current-state distributions | 13B-2 + sufficient history |
+| Full MRR time-series dashboard | Insufficient billing history for reliable trends | Data maturity | Never | Overview 30-day invoice issued count | Outstanding/overdue snapshots | Post go-live history |
 
 ---
 
 ## References
 
+- Phase 17 management reporting: `docs/PHASE_17_MANAGEMENT_REPORTING_DASHBOARDS.md`
 - Phase 16 portal boundary audit: `docs/PHASE_16_PORTAL_BOUNDARY_AUDIT.md`
 - Phase 16 UX audit: `docs/PHASE_16_UX_CONSISTENCY_AUDIT.md`
 - Phase 15 completion: `docs/PHASE_15_ITSI_MOBILE_FEATURE_REUSE_COMPLETION.md`

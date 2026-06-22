@@ -28,6 +28,7 @@ const PORTAL_FORBIDDEN_URL_PATTERNS = [
   /\/api\/v1\/energy\/fidelity\b/,
   /\/api\/v1\/admin\b/,
   /\/api\/v1\/platform\b/,
+  /\/api\/v1\/reports\b/,
   /itsi-mobile-wholesale/i,
 ];
 

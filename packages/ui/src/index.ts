@@ -27,3 +27,4 @@ export * from './DetailHeader';
 export * from './RelatedRecordsPanel';
 export * from './StaffEmptyState';
 export * from './format';
+export * from './reporting';

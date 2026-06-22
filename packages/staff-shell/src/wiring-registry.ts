@@ -52,6 +52,7 @@ export const ADMIN_WIRING: WorkspaceWiring = {
   workspace: 'admin',
   navLinks: [
     { label: 'Overview', href: '/', icon: '⊞', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Reports', href: '/reports', icon: '📊', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'reports.read' },
     { label: 'Settings', href: '/settings', icon: '⚙', enabled: true, requiredRealm: ['platform', 'staff'], comingSoonReason: 'Platform settings scaffold — full configuration in a later phase.' },
     { label: 'Staff', href: '/staff', icon: '👤', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'admin.staff.manage' },
     { label: 'Wholesale Connection', href: '/wholesale', icon: '🔗', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'wholesale.read' },

@@ -24,6 +24,7 @@ import { wholesaleRoutes } from './routes/wholesale';
 import { energyIntegrationRoutes } from './routes/energy-integrations';
 import { staffUserRoutes } from './routes/staff-users';
 import { statsRoutes } from './routes/stats';
+import { reportRoutes } from './routes/reports';
 import { portalRoutes } from './routes/portal';
 
 const PORT = parseInt(process.env.PORT ?? '17001', 10);
@@ -48,6 +49,7 @@ async function start() {
   await app.register(energyIntegrationRoutes, { prefix: '/api/v1/energy-integrations' });
   await app.register(staffUserRoutes,  { prefix: '/api/v1/admin/staff' });
   await app.register(statsRoutes,      { prefix: '/api/v1/stats' });
+  await app.register(reportRoutes,     { prefix: '/api/v1/reports' });
   await app.register(portalRoutes,     { prefix: '/api/v1/portal' });
 
   try {

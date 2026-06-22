@@ -189,6 +189,7 @@ async function main() {
         'desk.tickets.read', 'desk.tickets.write', 'desk.tickets.assign', 'desk.tickets.internal_notes',
         'work_items.read', 'work_items.write', 'work_items.assign', 'work_items.resolve', 'work_items.comment',
         'services.records.read', 'services.wholesale_links.read',
+        'reports.read', 'reports.billing.read', 'reports.operations.read', 'reports.energy.read',
       ],
     },
     create: {
@@ -198,6 +199,7 @@ async function main() {
         'desk.tickets.read', 'desk.tickets.write', 'desk.tickets.assign', 'desk.tickets.internal_notes',
         'work_items.read', 'work_items.write', 'work_items.assign', 'work_items.resolve', 'work_items.comment',
         'services.records.read', 'services.wholesale_links.read',
+        'reports.read', 'reports.billing.read', 'reports.operations.read', 'reports.energy.read',
       ],
     },
   });
