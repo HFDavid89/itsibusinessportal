@@ -62,9 +62,11 @@ itsiMobileClient.createOrder(config, serviceType, payload)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **13A** | Itsi Business client + contract docs + payload tests | **Complete** (this commit) |
-| **13B** | End-to-end smoke test Itsi Business → Itsi Mobile | **Blocked** — requires Itsi Mobile repo audit + matching routes |
-| **14** | Portal product/fleet controls | Complete separately as Phase 13 portal work |
+| **13A** | Itsi Business client + contract docs + payload tests | **Complete** (`864eefe`) — calls `/orders/mobile`, `/orders/broadband`, family status paths |
+| **14W** | Itsi Mobile family routes + contract tests | **Pending** — run in `HFDavid89/itsimobileportal` |
+| **13B** | E2E smoke test Itsi Business → Itsi Mobile | **Blocked** on 14W — see [`PHASE_13B_WHOLESALE_E2E_VERIFICATION.md`](./PHASE_13B_WHOLESALE_E2E_VERIFICATION.md) |
+
+> **Gate:** Do not extend portal/SIM controls until 13B passes.
 
 ## Itsi Mobile deliverables (required for 13B)
 
