@@ -88,10 +88,21 @@
 
 ## Implementation priority order
 
-1. **P0** — Admin dashboard real data; portal dashboard refocus; shared KPI components; placeholder gate script
-2. **P1** — Portal products/services/fleet/tickets polish; services summary API; desk CRM link fix
+1. **P0** — Admin dashboard real data; portal dashboard refocus; shared KPI components; placeholder gate script ✅ Wave 1
+2. **P1** — Portal products/services/fleet/tickets/billing polish ✅ Wave 2
 3. **P2** — Billing staff polish; order tracking copy; timeline enrichment
 4. **P3** — Admin settings; notifications; advanced CRM tabs
+
+### Wave 2 completion status
+
+| P1 item | Status |
+|---|---|
+| Portal products polish | Done |
+| Portal fleet detail polish | Done |
+| Portal tickets UX polish | Done |
+| Portal billing UX polish | Done |
+| CRM Account 360 empty states | Done |
+| Shared DataTable/FilterBar | Done |
 
 ---
 

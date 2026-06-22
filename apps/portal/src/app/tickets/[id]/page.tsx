@@ -3,9 +3,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { StatusPill } from '@itsi-business/ui';
-import { PortalPage, Panel } from '../../../components/PortalPage';
+import { LoadErrorPanel, LoadingList, StatusPill } from '@itsi-business/ui';
+import { PortalPage } from '../../../components/PortalPage';
+import { PortalHero, PortalPanel } from '../../../components/portal-ui/portal-cockpit';
 import { portalApi, TICKET_STATUS_LABELS, type PortalTicketDetail } from '../../../lib/api';
+import { TICKET_CATEGORY_LABELS, TICKET_PRIORITY_LABELS, ticketContextLabel } from '../../../lib/labels';
+
+function statusTone(status: string): 'success' | 'warning' | 'danger' | 'info' | 'default' {
+  if (status === 'OPEN' || status === 'WAITING_CUSTOMER') return 'warning';
+  if (status === 'RESOLVED' || status === 'CLOSED') return 'success';
+  if (status === 'WAITING_ITSI_MOBILE') return 'info';
+  return 'default';
+}
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,10 +22,15 @@ export default function TicketDetailPage() {
   const [reply, setReply] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const load = () => {
     if (!id) return;
-    portalApi.ticket(id).then(setTicket).catch(() => setError('Ticket not found'));
+    setLoading(true);
+    portalApi.ticket(id)
+      .then(setTicket)
+      .catch(() => setError('Ticket not found'))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, [id]);
@@ -37,50 +51,82 @@ export default function TicketDetailPage() {
     }
   }
 
+  const context = ticket ? ticketContextLabel(ticket.subject, ticket.category) : null;
+
   return (
     <PortalPage title={ticket?.subject ?? 'Ticket'} subtitle={ticket?.ticketNumber}>
-      <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <Link href="/tickets" style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))' }}>← Back to tickets</Link>
+      <div className="max-w-3xl mx-auto space-y-5">
+        <Link href="/tickets" className="text-xs text-muted hover:text-foreground">← Back to tickets</Link>
 
-        {error && !ticket && <p style={{ color: 'rgb(var(--danger))' }}>{error}</p>}
-        {!ticket && !error && <p style={{ color: 'rgb(var(--muted))' }}>Loading…</p>}
+        {error && !ticket && <LoadErrorPanel message={error} />}
+        {loading && <LoadingList rows={3} />}
 
         {ticket && (
           <>
-            <Panel>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-                <div>
-                  <h1 style={{ fontSize: '1rem', fontWeight: 700 }}>{ticket.subject}</h1>
-                  <p style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))', marginTop: 4 }}>{ticket.ticketNumber} · {ticket.category}</p>
-                </div>
-                <StatusPill tone="info">{TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}</StatusPill>
-              </div>
-              {ticket.description && <p style={{ fontSize: '0.85rem', marginTop: '1rem', lineHeight: 1.6 }}>{ticket.description}</p>}
-            </Panel>
+            <PortalHero
+              eyebrow="Support ticket"
+              title={ticket.subject}
+              subtitle={ticket.ticketNumber}
+              badges={<StatusPill tone={statusTone(ticket.status)}>{TICKET_STATUS_LABELS[ticket.status] ?? ticket.status}</StatusPill>}
+            />
 
-            <Panel>
-              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem' }}>Conversation</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {ticket.threads.map((t) => (
-                  <div key={t.id} style={{ padding: '0.75rem', borderRadius: 10, background: t.authorType === 'PORTAL_USER' ? 'rgb(var(--accent) / 0.08)' : 'rgb(var(--surface))', border: '1px solid rgb(var(--border))' }}>
-                    <p style={{ fontSize: '0.65rem', color: 'rgb(var(--muted))', marginBottom: 4 }}>{t.authorType === 'PORTAL_USER' ? 'You' : 'Support'} · {new Date(t.createdAt).toLocaleString('en-GB')}</p>
-                    <p style={{ fontSize: '0.85rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{t.body}</p>
+            <PortalPanel title="Ticket details">
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div><dt className="text-[10px] uppercase text-muted font-bold">Category</dt><dd className="mt-1">{TICKET_CATEGORY_LABELS[ticket.category ?? 'GENERAL'] ?? ticket.category}</dd></div>
+                <div><dt className="text-[10px] uppercase text-muted font-bold">Priority</dt><dd className="mt-1">{TICKET_PRIORITY_LABELS[ticket.priority] ?? ticket.priority}</dd></div>
+                {context && (
+                  <div className="col-span-2">
+                    <dt className="text-[10px] uppercase text-muted font-bold">Context</dt>
+                    <dd className="mt-1">{context}</dd>
                   </div>
-                ))}
-              </div>
-            </Panel>
+                )}
+              </dl>
+              {ticket.description && (
+                <p className="text-sm text-foreground mt-4 leading-relaxed whitespace-pre-wrap border-t border-border pt-4">{ticket.description}</p>
+              )}
+            </PortalPanel>
+
+            <PortalPanel title="Conversation">
+              {ticket.threads.length === 0 ? (
+                <p className="text-sm text-muted text-center py-4">No messages yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {ticket.threads.map((t) => (
+                    <div
+                      key={t.id}
+                      className={`rounded-xl border px-4 py-3 ${
+                        t.authorType === 'PORTAL_USER'
+                          ? 'border-accent/25 bg-accent/5'
+                          : 'border-border bg-surface'
+                      }`}
+                    >
+                      <p className="text-[10px] font-bold uppercase text-muted mb-1">
+                        {t.authorType === 'PORTAL_USER' ? 'You' : 'Support team'} · {new Date(t.createdAt).toLocaleString('en-GB')}
+                      </p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{t.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </PortalPanel>
 
             {ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && (
-              <Panel>
-                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem' }}>Add reply</h2>
-                {error && <p style={{ color: 'rgb(var(--danger))', fontSize: '0.8rem', marginBottom: 8 }}>{error}</p>}
-                <form onSubmit={handleReply}>
-                  <textarea required rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Type your message…" style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid rgb(var(--border))', background: 'rgb(var(--background))', color: 'inherit', marginBottom: 8 }} />
-                  <button type="submit" disabled={saving} style={{ padding: '0.5rem 1rem', borderRadius: 10, background: 'rgb(var(--accent))', color: 'rgb(var(--accent-foreground))', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+              <PortalPanel title="Add reply">
+                {error && <p className="text-sm text-danger mb-2">{error}</p>}
+                <form onSubmit={handleReply} className="space-y-3">
+                  <textarea
+                    required
+                    rows={4}
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Type your message…"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground"
+                  />
+                  <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-bold disabled:opacity-50">
                     {saving ? 'Sending…' : 'Send reply'}
                   </button>
                 </form>
-              </Panel>
+              </PortalPanel>
             )}
           </>
         )}

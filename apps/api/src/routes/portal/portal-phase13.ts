@@ -7,6 +7,7 @@ import {
   getPortalUserId,
   portalGuard,
   assertPortalUserOwnedByAccount,
+  sanitizeTicketForPortal,
 } from './helpers';
 import {
   loadPortalServiceById,
@@ -215,24 +216,76 @@ export function registerPortalPhase13Routes(app: FastifyInstance) {
       select: {
         id: true, serviceReference: true, displayName: true, status: true,
         mobileNumber: true, simLabel: true, costCentre: true, retailPricePence: true,
-        contractStartDate: true, contractEndDate: true, createdAt: true,
+        contractStartDate: true, contractEndDate: true, contactId: true, siteId: true,
+        createdAt: true,
       },
     });
     if (!sim) {
       return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'SIM not found' } });
     }
 
-    const [relatedInvoices, relatedTickets] = await Promise.all([
+    const [relatedInvoices, relatedTickets, contact, site, recentActivity] = await Promise.all([
       loadRelatedInvoices(accountId, sim.serviceReference),
-      loadRelatedTickets(accountId, 'MOBILE'),
+      prisma.businessTicket.findMany({
+        where: {
+          accountId,
+          OR: [
+            { category: 'MOBILE' },
+            { subject: { contains: sim.displayName, mode: 'insensitive' } },
+            { subject: { contains: sim.serviceReference, mode: 'insensitive' } },
+          ],
+        },
+        select: {
+          id: true, ticketNumber: true, subject: true, status: true, priority: true, category: true, updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 8,
+      }),
+      sim.contactId
+        ? prisma.businessContact.findFirst({
+            where: { id: sim.contactId, accountId },
+            select: { id: true, firstName: true, lastName: true, email: true },
+          })
+        : null,
+      sim.siteId
+        ? prisma.businessSite.findFirst({
+            where: { id: sim.siteId, accountId },
+            select: { id: true, name: true, postcode: true },
+          })
+        : null,
+      prisma.timelineEvent.findMany({
+        where: { accountId },
+        select: { id: true, type: true, occurredAt: true, meta: true },
+        orderBy: { occurredAt: 'desc' },
+        take: 20,
+      }).then((events) =>
+        events
+          .filter((ev) => {
+            const meta = ev.meta as Record<string, unknown> | null;
+            return meta?.serviceId === id || meta?.serviceReference === sim.serviceReference;
+          })
+          .slice(0, 6)
+          .map((ev) => ({
+            id: ev.id,
+            type: ev.type,
+            label: ev.type.replace(/_/g, ' ').toLowerCase(),
+            occurredAt: ev.occurredAt.toISOString(),
+          })),
+      ),
     ]);
 
     return reply.send({
       success: true,
       data: {
-        sim: { ...sim, statusLabel: toPortalStatusLabel(sim.status) },
+        sim: {
+          ...sim,
+          statusLabel: toPortalStatusLabel(sim.status),
+          contact,
+          site,
+        },
         relatedInvoices,
-        relatedTickets,
+        relatedTickets: relatedTickets.map(sanitizeTicketForPortal),
+        recentActivity,
       },
     });
   });

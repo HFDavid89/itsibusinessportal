@@ -2,19 +2,34 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { StatusPill } from '@itsi-business/ui';
-import { PortalPage, Panel, EmptyState, DisabledAction } from '../../components/PortalPage';
+import { useRouter } from 'next/navigation';
+import { CompactKpiChip, DataTable, FilterBar, LoadErrorPanel, LoadingList } from '@itsi-business/ui';
+import { PortalPage } from '../../components/PortalPage';
+import { PortalHero } from '../../components/portal-ui/portal-cockpit';
+import { ServiceStatusBadge } from '../../components/portal-ui/StatusBadges';
 import { portalApi, fmtPence, type PortalFleetItem } from '../../lib/api';
 
-const STATUS_FILTERS = ['ALL', 'ACTIVE', 'REQUESTED', 'SUSPENDED', 'CEASED'] as const;
+const STATUS_FILTERS = [
+  { value: 'ALL', label: 'All statuses' },
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'REQUESTED', label: 'Requested' },
+  { value: 'SUSPENDED', label: 'Suspended' },
+  { value: 'CEASED', label: 'Ceased' },
+];
 
 export default function FleetPage() {
+  const router = useRouter();
   const [sims, setSims] = useState<PortalFleetItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>('ALL');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    portalApi.fleet().then(setSims);
+    portalApi.fleet()
+      .then(setSims)
+      .catch(() => setError('Unable to load mobile fleet.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -22,9 +37,11 @@ export default function FleetPage() {
     return sims.filter((s) => {
       if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
       if (!q) return true;
-      return [s.displayName, s.mobileNumber, s.simLabel, s.costCentre, s.serviceReference]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q));
+      return [
+        s.displayName, s.mobileNumber, s.simLabel, s.costCentre, s.serviceReference,
+        s.contact ? `${s.contact.firstName} ${s.contact.lastName}` : '',
+        s.site?.name,
+      ].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
     });
   }, [sims, statusFilter, search]);
 
@@ -36,76 +53,86 @@ export default function FleetPage() {
   }), [sims]);
 
   return (
-    <PortalPage title="Mobile fleet & SIMs" subtitle={`${sims.length} lines`}>
-      <div style={{ maxWidth: 1024, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {sims.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-            {(['active', 'requested', 'suspended', 'ceased'] as const).map((k) => (
-              <Panel key={k}>
-                <p style={{ fontSize: '0.65rem', color: 'rgb(var(--muted))', textTransform: 'uppercase' }}>{k}</p>
-                <p style={{ fontSize: '1.25rem', fontWeight: 700 }}>{counts[k]}</p>
-              </Panel>
-            ))}
+    <PortalPage title="Mobile fleet & SIMs" subtitle={`${sims.length} lines on your account`}>
+      <div className="max-w-6xl mx-auto space-y-5">
+        <PortalHero
+          eyebrow="Mobile fleet"
+          title="SIMs & mobile lines"
+          subtitle="View and label your business mobile services. Network changes are request-based until live provisioning is available."
+        />
+
+        {error && <LoadErrorPanel message={error} onRetry={() => window.location.reload()} />}
+
+        {loading ? (
+          <LoadingList rows={5} />
+        ) : sims.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-surface-raised px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-foreground">No mobile lines</p>
+            <p className="text-xs text-muted mt-1">Your account does not have any mobile services yet.</p>
           </div>
-        )}
-
-        {sims.length > 0 && (
-          <Panel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                type="search"
-                placeholder="Search number, label, cost centre…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ flex: '1 1 200px', padding: '0.5rem', borderRadius: 8, border: '1px solid rgb(var(--border))', background: 'rgb(var(--background))', color: 'inherit' }}
-              />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                style={{ padding: '0.5rem', borderRadius: 8, border: '1px solid rgb(var(--border))', background: 'rgb(var(--background))', color: 'inherit' }}
-              >
-                {STATUS_FILTERS.map((f) => (
-                  <option key={f} value={f}>{f === 'ALL' ? 'All statuses' : f}</option>
-                ))}
-              </select>
-            </div>
-          </Panel>
-        )}
-
-        {!sims.length ? (
-          <EmptyState message="No mobile lines on your account." />
-        ) : !filtered.length ? (
-          <EmptyState message="No SIMs match your filters." />
         ) : (
-          <Panel>
-            <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', color: 'rgb(var(--muted))', fontSize: '0.65rem', textTransform: 'uppercase' }}>
-                  <th>Label</th><th>Number</th><th>SIM</th><th>Cost centre</th><th>Status</th><th>Price</th><th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((s) => (
-                  <tr key={s.id} style={{ borderTop: '1px solid rgb(var(--border))' }}>
-                    <td style={{ padding: '0.5rem 0' }}>
-                      <Link href={`/fleet/${s.id}`} style={{ fontWeight: 600, color: 'inherit', textDecoration: 'none' }}>{s.displayName}</Link>
-                    </td>
-                    <td>{s.mobileNumber ?? '—'}</td>
-                    <td>{s.simLabel ?? '—'}</td>
-                    <td>{s.costCentre ?? '—'}</td>
-                    <td><StatusPill tone={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.statusLabel ?? s.status}</StatusPill></td>
-                    <td>{fmtPence(s.retailPricePence)}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                        <Link href={`/fleet/${s.id}`} style={{ fontSize: '0.7rem', fontWeight: 600 }}>Details</Link>
-                        <DisabledAction label="SIM swap" reason="Coming soon — contact support to request this change" />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Panel>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <CompactKpiChip label="Active" value={counts.active} />
+              <CompactKpiChip label="Requested" value={counts.requested} />
+              <CompactKpiChip label="Suspended" value={counts.suspended} />
+              <CompactKpiChip label="Ceased" value={counts.ceased} />
+            </div>
+
+            <FilterBar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search number, label, cost centre, contact…"
+              filters={[{
+                id: 'status',
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: STATUS_FILTERS,
+              }]}
+            />
+
+            <DataTable
+              rows={filtered}
+              rowKey={(s) => s.id}
+              emptyMessage="No SIMs match your filters."
+              onRowClick={(s) => router.push(`/fleet/${s.id}`)}
+              columns={[
+                {
+                  key: 'label',
+                  header: 'Line',
+                  cell: (s) => (
+                    <div>
+                      <p className="font-semibold text-foreground">{s.displayName}</p>
+                      <p className="text-[11px] text-muted font-mono">{s.serviceReference}</p>
+                    </div>
+                  ),
+                },
+                { key: 'number', header: 'Number', cell: (s) => s.mobileNumber ?? '—' },
+                { key: 'sim', header: 'SIM label', cell: (s) => s.simLabel ?? '—' },
+                { key: 'cost', header: 'Cost centre', cell: (s) => s.costCentre ?? '—' },
+                {
+                  key: 'contact',
+                  header: 'Contact',
+                  cell: (s) => s.contact ? `${s.contact.firstName} ${s.contact.lastName}` : '—',
+                },
+                {
+                  key: 'status',
+                  header: 'Status',
+                  cell: (s) => <ServiceStatusBadge status={s.status} label={s.statusLabel} />,
+                },
+                { key: 'price', header: 'Price', cell: (s) => fmtPence(s.retailPricePence) },
+                {
+                  key: 'actions',
+                  header: '',
+                  cell: (s) => (
+                    <Link href={`/fleet/${s.id}`} className="text-xs font-semibold text-accent hover:underline" onClick={(e) => e.stopPropagation()}>
+                      Details →
+                    </Link>
+                  ),
+                },
+              ]}
+            />
+          </>
         )}
       </div>
     </PortalPage>

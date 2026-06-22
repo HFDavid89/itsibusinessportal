@@ -6,7 +6,41 @@
 
 Systematically refocus mature Itsi Mobile Portal patterns into Itsi Business so the platform feels like a complete business-focused portal — not a separate scaffold.
 
-## What was copied / refocused from Itsi Mobile
+## Wave 2 — Portal depth and shared table patterns (69efa7a → current)
+
+### Itsi Mobile patterns copied/refocused
+
+| Area | Itsi Mobile source | Itsi Business implementation |
+|---|---|---|
+| Product/plan cards | Public pricing card layout | `apps/portal/src/app/products/page.tsx` with type filters, setup fee, contract term |
+| SIM/fleet table | `business/fleet/page.tsx` | `apps/portal/src/app/fleet/page.tsx` + `[id]` detail with metadata edit |
+| Support list/detail | `support/page.tsx` | `apps/portal/src/app/tickets/` with filters, context labels, reply thread |
+| Billing list/detail | `billing/page.tsx` expandable rows | `apps/portal/src/app/billing/` with status tabs, payment instructions panel |
+| CRM tab empty states | Account workspace panels | `TabEmptyState` in CRM account tab panels |
+| Shared tables/filters | Per-app table patterns | `@itsi-business/ui` `DataTable`, `FilterBar`, `LoadingList` |
+
+### Pages completed in Wave 2
+
+- Portal `/products` — filters, loading/error, enquiry CTA
+- Portal `/fleet` and `/fleet/[id]` — contact/site, related tickets, activity timeline, explicit network defer
+- Portal `/tickets` and `/tickets/[id]` — status/category/priority filters, context panel
+- Portal `/billing` and `/billing/[id]` — outstanding/overdue KPIs, payment instructions (no fake pay/PDF)
+- CRM Account 360 tabs — consistent empty states with guidance
+
+### API enhancements
+
+- `GET /api/v1/portal/tickets` — `category`, `priority`, `q` filters
+- `GET /api/v1/portal/fleet` — contact and site resolution
+- `GET /api/v1/portal/fleet/:id` — related tickets, customer-safe activity timeline
+
+### Placeholder reduction
+
+- Removed per-row fake Pay buttons from billing list
+- Replaced invoice detail disabled pay/PDF with payment instructions panel when balance due
+- Network control reasons now cite 13B-2 staging gate explicitly
+- CRM tab panels use guided empty states instead of bare “No X yet” text
+
+## What was copied / refocused from Itsi Mobile (Wave 1)
 
 | Area | Itsi Mobile source | Itsi Business implementation |
 |---|---|---|

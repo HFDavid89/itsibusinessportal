@@ -474,11 +474,23 @@ export async function portalRoutes(app: FastifyInstance) {
     const accountId = getPortalAccountId(request, reply);
     if (!accountId) return;
 
-    const { page = '1', limit = '50', status } = (request.query as Record<string, string>) ?? {};
+    const { page = '1', limit = '50', status, category, priority, q } = (request.query as Record<string, string>) ?? {};
     const take = Math.min(parseInt(limit, 10) || 50, 100);
     const skip = (Math.max(parseInt(page, 10) || 1, 1) - 1) * take;
 
-    const where: any = { accountId, ...(status ? { status } : {}) };
+    const where: any = {
+      accountId,
+      ...(status ? { status } : {}),
+      ...(category ? { category } : {}),
+      ...(priority ? { priority } : {}),
+      ...(q?.trim() ? {
+        OR: [
+          { subject: { contains: q.trim(), mode: 'insensitive' } },
+          { ticketNumber: { contains: q.trim(), mode: 'insensitive' } },
+          { description: { contains: q.trim(), mode: 'insensitive' } },
+        ],
+      } : {}),
+    };
 
     const [tickets, total] = await Promise.all([
       prisma.businessTicket.findMany({
@@ -632,15 +644,40 @@ export async function portalRoutes(app: FastifyInstance) {
       select: {
         id: true, serviceReference: true, displayName: true, status: true,
         mobileNumber: true, simLabel: true, costCentre: true, retailPricePence: true,
-        contractStartDate: true, createdAt: true,
+        contractStartDate: true, contractEndDate: true, contactId: true, siteId: true,
+        createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 200,
     });
 
+    const contactIds = [...new Set(sims.map((s) => s.contactId).filter(Boolean))] as string[];
+    const siteIds = [...new Set(sims.map((s) => s.siteId).filter(Boolean))] as string[];
+    const [contacts, sites] = await Promise.all([
+      contactIds.length
+        ? prisma.businessContact.findMany({
+            where: { id: { in: contactIds } },
+            select: { id: true, firstName: true, lastName: true, email: true },
+          })
+        : [],
+      siteIds.length
+        ? prisma.businessSite.findMany({
+            where: { id: { in: siteIds } },
+            select: { id: true, name: true, postcode: true },
+          })
+        : [],
+    ]);
+    const contactMap = Object.fromEntries(contacts.map((c) => [c.id, c]));
+    const siteMap = Object.fromEntries(sites.map((s) => [s.id, s]));
+
     return reply.send({
       success: true,
-      data: sims.map((s) => ({ ...s, statusLabel: toPortalStatusLabel(s.status) })),
+      data: sims.map((s) => ({
+        ...s,
+        statusLabel: toPortalStatusLabel(s.status),
+        contact: s.contactId ? contactMap[s.contactId] ?? null : null,
+        site: s.siteId ? siteMap[s.siteId] ?? null : null,
+      })),
     });
   });
 

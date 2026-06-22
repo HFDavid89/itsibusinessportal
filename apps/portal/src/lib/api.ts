@@ -172,6 +172,22 @@ export interface PortalFleetItem {
   retailPricePence: number;
   contractStartDate?: string | null;
   contractEndDate?: string | null;
+  contact?: { id: string; firstName: string; lastName: string; email: string } | null;
+  site?: { id: string; name: string; postcode: string } | null;
+}
+
+export interface PortalFleetActivity {
+  id: string;
+  type: string;
+  label: string;
+  occurredAt: string;
+}
+
+export interface PortalFleetDetail {
+  sim: PortalFleetItem;
+  relatedInvoices: PortalRelatedInvoice[];
+  relatedTickets: PortalTicketSummary[];
+  recentActivity: PortalFleetActivity[];
 }
 
 export interface PortalRelatedInvoice {
@@ -192,12 +208,6 @@ export interface PortalServiceDetail {
     postcode?: string | null;
     circuitLabel?: string | null;
   };
-  relatedInvoices: PortalRelatedInvoice[];
-  relatedTickets: PortalTicketSummary[];
-}
-
-export interface PortalFleetDetail {
-  sim: PortalFleetItem;
   relatedInvoices: PortalRelatedInvoice[];
   relatedTickets: PortalTicketSummary[];
 }
@@ -244,9 +254,14 @@ export const portalApi = {
     return apiFetch<ApiEnvelope<PortalInvoiceSummary[]>>(`/api/v1/portal/invoices${q}`).then((r) => r);
   },
   invoice: (id: string) => get<PortalInvoiceDetail>(`/api/v1/portal/invoices/${id}`),
-  tickets: (params?: { status?: string }) => {
-    const q = params?.status ? `?status=${encodeURIComponent(params.status)}` : '';
-    return apiFetch<ApiEnvelope<PortalTicketSummary[]>>(`/api/v1/portal/tickets${q}`).then((r) => r);
+  tickets: (params?: { status?: string; category?: string; priority?: string; q?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.category) qs.set('category', params.category);
+    if (params?.priority) qs.set('priority', params.priority);
+    if (params?.q) qs.set('q', params.q);
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return apiFetch<ApiEnvelope<PortalTicketSummary[]>>(`/api/v1/portal/tickets${suffix}`).then((r) => r);
   },
   ticket: (id: string) => get<PortalTicketDetail>(`/api/v1/portal/tickets/${id}`),
   createTicket: (body: { subject: string; description?: string; category?: string; priority?: string; message?: string }) =>

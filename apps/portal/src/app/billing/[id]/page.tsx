@@ -3,86 +3,117 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { StatusPill } from '@itsi-business/ui';
-import { PortalPage, Panel, DisabledAction } from '../../../components/PortalPage';
+import { LoadErrorPanel, LoadingList } from '@itsi-business/ui';
+import { PortalPage } from '../../../components/PortalPage';
+import { PortalHero, PortalPanel } from '../../../components/portal-ui/portal-cockpit';
+import { InvoiceStatusBadge } from '../../../components/portal-ui/StatusBadges';
 import { portalApi, fmtPence, fmtDate, type PortalInvoiceDetail } from '../../../lib/api';
+import { INVOICE_STATUS_LABELS } from '../../../lib/labels';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [invoice, setInvoice] = useState<PortalInvoiceDetail | null>(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
-    portalApi.invoice(id).then(setInvoice).catch(() => setError('Invoice not found'));
+    portalApi.invoice(id)
+      .then(setInvoice)
+      .catch(() => setError('Invoice not found'))
+      .finally(() => setLoading(false));
   }, [id]);
 
-  return (
-    <PortalPage title={invoice?.invoiceNumber ?? 'Invoice'} subtitle={invoice?.status}>
-      <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <Link href="/billing" style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))' }}>← Back to billing</Link>
+  const hasBalance = (invoice?.balanceDuePence ?? 0) > 0;
 
-        {error && <p style={{ color: 'rgb(var(--danger))' }}>{error}</p>}
-        {!invoice && !error && <p style={{ color: 'rgb(var(--muted))' }}>Loading…</p>}
+  return (
+    <PortalPage title={invoice?.invoiceNumber ?? 'Invoice'} subtitle={invoice ? INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status : undefined}>
+      <div className="max-w-4xl mx-auto space-y-5">
+        <Link href="/billing" className="text-xs text-muted hover:text-foreground">← Back to billing</Link>
+
+        {error && <LoadErrorPanel message={error} />}
+        {loading && <LoadingList rows={3} />}
 
         {invoice && (
           <>
-            <Panel>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-                <div>
-                  <h1 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{invoice.invoiceNumber}</h1>
-                  <p style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))', marginTop: 4 }}>
-                    Issued {fmtDate(invoice.issueDate)} · Due {fmtDate(invoice.dueDate)}
-                  </p>
-                </div>
-                <StatusPill tone={invoice.status === 'OVERDUE' ? 'danger' : invoice.status === 'PAID' ? 'success' : 'default'}>{invoice.status}</StatusPill>
-              </div>
-              <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem', fontSize: '0.85rem' }}>
-                <div><dt style={{ color: 'rgb(var(--muted))', fontSize: '0.65rem' }}>Total</dt><dd style={{ fontWeight: 700 }}>{fmtPence(invoice.totalPence)}</dd></div>
-                <div><dt style={{ color: 'rgb(var(--muted))', fontSize: '0.65rem' }}>Paid</dt><dd>{fmtPence(invoice.amountPaidPence)}</dd></div>
-                <div><dt style={{ color: 'rgb(var(--muted))', fontSize: '0.65rem' }}>Balance due</dt><dd style={{ fontWeight: 700, color: invoice.balanceDuePence > 0 ? 'rgb(var(--danger))' : undefined }}>{fmtPence(invoice.balanceDuePence)}</dd></div>
-              </dl>
-              <div style={{ marginTop: '1rem', display: 'flex', gap: 8 }}>
-                <DisabledAction label="Pay invoice" reason="Online payment coming soon" />
-                <DisabledAction label="Download PDF" reason="PDF generation not yet available" />
-              </div>
-            </Panel>
+            <PortalHero
+              eyebrow="Invoice"
+              title={invoice.invoiceNumber}
+              subtitle={`Issued ${fmtDate(invoice.issueDate)} · Due ${fmtDate(invoice.dueDate)}`}
+              badges={<InvoiceStatusBadge status={invoice.status} />}
+            />
 
-            <Panel>
-              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem' }}>Line items</h2>
-              <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', color: 'rgb(var(--muted))', fontSize: '0.65rem' }}>
-                    <th>Description</th><th>Service</th><th>Qty</th><th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoice.lines.map((line) => (
-                    <tr key={line.id} style={{ borderTop: '1px solid rgb(var(--border))' }}>
-                      <td style={{ padding: '0.5rem 0' }}>{line.description}</td>
-                      <td>
-                        {line.serviceLink ? (
-                          <Link href={`/services/${line.serviceLink.serviceId}`} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'inherit' }}>
-                            {line.serviceLink.displayName}
-                          </Link>
-                        ) : line.businessServiceReference ? (
-                          <span style={{ fontSize: '0.7rem', color: 'rgb(var(--muted))', fontFamily: 'monospace' }}>{line.businessServiceReference}</span>
-                        ) : (
-                          <span style={{ fontSize: '0.7rem', color: 'rgb(var(--muted))' }}>—</span>
-                        )}
-                      </td>
-                      <td>{line.quantity}</td>
-                      <td>{fmtPence(line.grossAmountPence)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {invoice.lines.every((l) => !l.serviceLink && !l.businessServiceReference) && (
-                <p style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))', marginTop: '0.75rem' }}>
-                  Service linkage to invoice lines coming soon where billing references are not yet recorded.
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-xl border border-border bg-surface-raised p-4">
+                <p className="text-[10px] uppercase text-muted font-bold">Total</p>
+                <p className="text-xl font-bold mt-1">{fmtPence(invoice.totalPence)}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-surface-raised p-4">
+                <p className="text-[10px] uppercase text-muted font-bold">Paid</p>
+                <p className="text-xl font-bold mt-1">{fmtPence(invoice.amountPaidPence)}</p>
+              </div>
+              <div className={`rounded-xl border p-4 ${invoice.status === 'OVERDUE' ? 'border-danger/30 bg-danger/5' : 'border-border bg-surface-raised'}`}>
+                <p className="text-[10px] uppercase text-muted font-bold">Balance due</p>
+                <p className={`text-xl font-bold mt-1 ${hasBalance ? 'text-danger' : ''}`}>{fmtPence(invoice.balanceDuePence)}</p>
+              </div>
+            </div>
+
+            {hasBalance && (
+              <PortalPanel title="Payment instructions">
+                <p className="text-sm text-foreground leading-relaxed">
+                  Online card payment is not yet available in the business portal. Please pay using your agreed business payment method
+                  and quote invoice <strong className="font-mono">{invoice.invoiceNumber}</strong> as your payment reference.
                 </p>
+                <p className="text-xs text-muted mt-2">
+                  If you need payment details or have questions, raise a billing support ticket from the Support area.
+                </p>
+              </PortalPanel>
+            )}
+
+            <PortalPanel title="Line items">
+              {invoice.lines.length === 0 ? (
+                <p className="text-sm text-muted text-center py-4">No line items recorded.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-[10px] uppercase text-muted border-b border-border">
+                        <th className="py-2 pr-3">Description</th>
+                        <th className="py-2 pr-3">Service</th>
+                        <th className="py-2 pr-3">Qty</th>
+                        <th className="py-2">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.lines.map((line) => (
+                        <tr key={line.id} className="border-t border-border/60">
+                          <td className="py-3 pr-3">{line.description}</td>
+                          <td className="py-3 pr-3">
+                            {line.serviceLink ? (
+                              <Link href={`/services/${line.serviceLink.serviceId}`} className="text-xs font-semibold text-accent hover:underline">
+                                {line.serviceLink.displayName}
+                              </Link>
+                            ) : line.businessServiceReference ? (
+                              <span className="text-xs text-muted font-mono">{line.businessServiceReference}</span>
+                            ) : (
+                              <span className="text-xs text-muted">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 pr-3">{line.quantity}</td>
+                          <td className="py-3 font-semibold">{fmtPence(line.grossAmountPence)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </Panel>
+            </PortalPanel>
+
+            {invoice.notes && (
+              <PortalPanel title="Notes">
+                <p className="text-sm text-muted whitespace-pre-wrap">{invoice.notes}</p>
+              </PortalPanel>
+            )}
           </>
         )}
       </div>

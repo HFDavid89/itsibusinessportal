@@ -366,3 +366,14 @@
 | Live SIM/network controls | **Skip (blocked)** | Disabled with support CTA | Blocked until 13B-2 |
 | Wholesale billing reconciliation | **Skip (deferred)** | Billing panel marked deferred | Until wholesale billing E2E |
 | Provider direct APIs | **Skip (hard excluded)** | Wholesale bridge only | Hard excluded |
+
+### Wave 2 additions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Public pricing product cards | **Refocus** | Portal `/products` with type filters and enquiry CTA | Direct ordering, wholesale cost |
+| Fleet table + detail | **Refocus** | Portal `/fleet` with DataTable, metadata edit, activity | Live network controls |
+| Support page filters/threads | **Refocus** | Portal `/tickets` with FilterBar and context labels | Internal notes, work items |
+| Billing expandable rows | **Refocus** | Portal `/billing` with status tabs and payment instructions | Online pay, PDF generation |
+| CRM account tab panels | **Refocus** | `TabEmptyState` guided empty states | Provider tabs |
+| Per-app table markup | **Refocus** | `@itsi-business/ui` DataTable, FilterBar, LoadingList | Premature full abstraction |

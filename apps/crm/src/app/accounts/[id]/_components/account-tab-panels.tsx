@@ -11,6 +11,7 @@ import {
   type CreateContactInput,
   type CreateSiteInput,
 } from '../../../../lib/api';
+import { TabEmptyState } from '../../../../components/TabEmptyState';
 
 const INP = 'w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30';
 
@@ -101,7 +102,11 @@ export function ContactsPanel({ accountId }: { accountId: string }) {
           {[...Array(2)].map((_, i) => <div key={i} className="h-16 bg-surface-raised rounded-xl animate-pulse" />)}
         </div>
       ) : contacts.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">No contacts yet. Add one above.</div>
+        <TabEmptyState
+          title="No contacts yet"
+          message="Add a primary billing or technical contact for this business account."
+          action={{ label: 'Add contact', onClick: () => setShowForm(true) }}
+        />
       ) : (
         <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
           {contacts.map((c) => (
@@ -206,7 +211,11 @@ export function SitesPanel({ accountId }: { accountId: string }) {
           {[...Array(2)].map((_, i) => <div key={i} className="h-20 bg-surface-raised rounded-xl animate-pulse" />)}
         </div>
       ) : sites.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">No sites yet. Add one above.</div>
+        <TabEmptyState
+          title="No sites yet"
+          message="Add business sites so services and energy records can be linked to locations."
+          action={{ label: 'Add site', onClick: () => setShowForm(true) }}
+        />
       ) : (
         <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
           {sites.map((s) => (
@@ -263,7 +272,7 @@ export function InvoicesPanel({ accountId }: { accountId: string }) {
       {loading ? (
         <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-surface-raised rounded-xl animate-pulse" />)}</div>
       ) : invoices.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">No invoices for this account.</div>
+        <TabEmptyState title="No invoices" message="Issue invoices from the Billing workspace to see them here." />
       ) : (
         <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
           {invoices.map((inv) => (
@@ -324,7 +333,7 @@ export function ServicesPanel({ accountId }: { accountId: string }) {
       {loading ? (
         <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-surface-raised rounded-xl animate-pulse" />)}</div>
       ) : services.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">No services for this account.</div>
+        <TabEmptyState title="No services" message="Create mobile, broadband, or energy service records in the Services workspace." />
       ) : (
         <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
           {services.map((svc) => (
@@ -415,7 +424,7 @@ export function EnergyPanel({ accountId }: { accountId: string }) {
       {loading ? (
         <div className="space-y-2">{[...Array(2)].map((_, i) => <div key={i} className="h-16 bg-surface-raised rounded-xl animate-pulse" />)}</div>
       ) : records.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">No energy records for this account.</div>
+        <TabEmptyState title="No energy records" message="Track Fidelity referrals, renewals, and check-ins for this account's energy contracts." />
       ) : (
         <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
           {records.map((r) => (
@@ -486,7 +495,7 @@ export function TimelinePanel({ accountId }: { accountId: string }) {
           {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-surface-raised rounded-xl animate-pulse" />)}
         </div>
       ) : events.length === 0 ? (
-        <div className="text-center py-10 text-sm text-muted">No timeline events yet.</div>
+        <TabEmptyState title="No timeline events" message="Account activity will appear here as contacts, services, tickets, and energy actions are recorded." />
       ) : (
         <div className="relative pl-5 space-y-0">
           <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border" />
