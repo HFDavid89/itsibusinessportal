@@ -346,3 +346,23 @@
 | Live SIM/network staff controls | **Skip (blocked)** | Not in Phase 14 | Blocked until 13B-2 + live wholesale |
 | Portal work item visibility | **Skip (hard excluded)** | Portal sees tickets only | Work item IDs, SLA, internal comments |
 | Itsi Mobile task/queue models | **Skip** | New `BusinessWorkItem` on Business schema | Direct model import |
+
+---
+
+## Phase 15 — Itsi Mobile feature reuse and portal completion
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| `ConsumerDashboard.tsx` | **Refocus** | Portal dashboard with business KPIs, energy renewals, product enquiries | Usage rings, subscription bolt-ons |
+| `portal-ui/portal-cockpit.tsx` | **Refocus** | `PortalHero`, `PortalPanel` in portal app | Tenant branding provider |
+| `portal-ui/StatusBadges.tsx` | **Refocus** | Portal service/invoice badges | Provider status enums |
+| `packages/ui/CompactKpiChip.tsx` | **Reuse** | `@itsi-business/ui` | Fake trend sparklines |
+| `packages/ui/ActionListPanel.tsx` | **Reuse** | `@itsi-business/ui` + portal quick actions | Consumer self-order links |
+| `apps/admin/dashboard/page.tsx` | **Refocus** | Admin overview wired to `/api/v1/stats/dashboard` | Reseller tenant metrics |
+| CRM account workspace hero/tabs | **Refocus** | Account 360 cockpit (Phase 14 + polish) | Gamma, VoIP, porting tabs |
+| Services aggregate KPIs | **New** | `/api/v1/services/summary` | Sample-based counts |
+| Portal dashboard API | **Refocus** | Energy renewals, product enquiries, timeline activity | Work items, wholesale refs |
+| Residential signup/onboarding | **Skip (hard excluded)** | Not implemented | Hard excluded |
+| Live SIM/network controls | **Skip (blocked)** | Disabled with support CTA | Blocked until 13B-2 |
+| Wholesale billing reconciliation | **Skip (deferred)** | Billing panel marked deferred | Until wholesale billing E2E |
+| Provider direct APIs | **Skip (hard excluded)** | Wholesale bridge only | Hard excluded |
