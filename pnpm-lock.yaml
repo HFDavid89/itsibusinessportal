@@ -5,19 +5,19 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@types/react': ^18.3.5
-  '@types/react-dom': ^18.3.0
+  '@types/react': ^19.2.0
+  '@types/react-dom': ^19.2.0
 
 importers:
 
   .:
     devDependencies:
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.30.1
         version: 8.61.1(@typescript-eslint/parser@8.61.1)(eslint@9.39.4)(typescript@5.9.3)
@@ -34,11 +34,11 @@ importers:
         specifier: ^15.3.2
         version: 15.5.19(eslint@9.39.4)(typescript@5.9.3)
       eslint-config-prettier:
-        specifier: ^9.1.0
-        version: 9.1.2(eslint@9.39.4)
+        specifier: ^10.1.8
+        version: 10.1.8(eslint@9.39.4)
       eslint-plugin-prettier:
         specifier: ^5.2.1
-        version: 5.5.6(eslint-config-prettier@9.1.2)(eslint@9.39.4)(prettier@3.8.4)
+        version: 5.5.6(eslint-config-prettier@10.1.8)(eslint@9.39.4)(prettier@3.8.4)
       prettier:
         specifier: ^3.6.2
         version: 3.8.4
@@ -77,11 +77,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -104,8 +104,8 @@ importers:
         specifier: ^13.0.1
         version: 13.0.2
       '@fastify/jwt':
-        specifier: ^9.0.1
-        version: 9.1.0
+        specifier: ^10.1.0
+        version: 10.1.0
       '@fastify/rate-limit':
         specifier: ^10.2.2
         version: 10.3.0
@@ -125,7 +125,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/types
       '@prisma/client':
-        specifier: ^6.0.0
+        specifier: ~6.19.3
         version: 6.19.3(prisma@6.19.3)(typescript@5.9.3)
       bcryptjs:
         specifier: ^2.4.3
@@ -147,7 +147,7 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       prisma:
-        specifier: ^6.0.0
+        specifier: ~6.19.3
         version: 6.19.3(typescript@5.9.3)
       typescript:
         specifier: ^5.6.2
@@ -181,11 +181,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -224,11 +224,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -267,11 +267,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -313,11 +313,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -359,11 +359,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -408,14 +408,14 @@ importers:
   packages/database:
     dependencies:
       '@prisma/client':
-        specifier: ^6.0.0
+        specifier: ~6.19.3
         version: 6.19.3(prisma@6.19.3)(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.0
       prisma:
-        specifier: ^6.0.0
+        specifier: ~6.19.3
         version: 6.19.3(typescript@5.9.3)
       typescript:
         specifier: ^5.6.2
@@ -443,11 +443,11 @@ importers:
         specifier: ^22.0.0
         version: 22.20.0
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
@@ -484,11 +484,11 @@ importers:
         version: 19.2.7(react@19.2.7)
     devDependencies:
       '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.31
+        specifier: ^19.2.0
+        version: 19.2.17
       '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.31)
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.17)
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
@@ -885,12 +885,12 @@ packages:
       helmet: 8.2.0
     dev: false
 
-  /@fastify/jwt@9.1.0:
-    resolution: {integrity: sha512-CiGHCnS5cPMdb004c70sUWhQTfzrJHAeTywt7nVw6dAiI0z1o4WRvU94xfijhkaId4bIxTCOjFgn4sU+Gvk43w==}
+  /@fastify/jwt@10.1.0:
+    resolution: {integrity: sha512-U1y8ZbxoH1Pjon3euzPJmbCkuYBM+hrQlFWLQWvKmJGCNT6mVsAolnVJdEWfXeQOKpgmuRVCIsPll5RLZxj10A==}
     dependencies:
       '@fastify/error': 4.2.0
       '@lukeed/ms': 2.0.2
-      fast-jwt: 5.0.6
+      fast-jwt: 6.2.4
       fastify-plugin: 5.1.0
       steed: 1.1.3
     dev: false
@@ -1660,22 +1660,17 @@ packages:
       undici-types: 6.21.0
     dev: true
 
-  /@types/prop-types@15.7.15:
-    resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
-    dev: true
-
-  /@types/react-dom@18.3.7(@types/react@18.3.31):
-    resolution: {integrity: sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==}
+  /@types/react-dom@19.2.3(@types/react@19.2.17):
+    resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
-      '@types/react': ^18.3.5
+      '@types/react': ^19.2.0
     dependencies:
-      '@types/react': 18.3.31
+      '@types/react': 19.2.17
     dev: true
 
-  /@types/react@18.3.31:
-    resolution: {integrity: sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw==}
+  /@types/react@19.2.17:
+    resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
     dependencies:
-      '@types/prop-types': 15.7.15
       csstype: 3.2.3
     dev: true
 
@@ -2788,8 +2783,8 @@ packages:
       - supports-color
     dev: true
 
-  /eslint-config-prettier@9.1.2(eslint@9.39.4):
-    resolution: {integrity: sha512-iI1f+D2ViGn+uvv5HuHVUamg8ll4tN+JRHGc6IJi4TP9Kl976C57fzPXgseXNs8v0iA8aSJpHsTWjDb9QJamGQ==}
+  /eslint-config-prettier@10.1.8(eslint@9.39.4):
+    resolution: {integrity: sha512-82GZUjRS0p/jganf6q1rEO25VSoHH0hKPCTrgillPjdI/3bgBhAE1QzHrHTizjpRvy6pGAvKjDJtk2pF9NDq8w==}
     hasBin: true
     peerDependencies:
       eslint: '>=7.0.0'
@@ -2924,7 +2919,7 @@ packages:
       string.prototype.includes: 2.0.1
     dev: true
 
-  /eslint-plugin-prettier@5.5.6(eslint-config-prettier@9.1.2)(eslint@9.39.4)(prettier@3.8.4):
+  /eslint-plugin-prettier@5.5.6(eslint-config-prettier@10.1.8)(eslint@9.39.4)(prettier@3.8.4):
     resolution: {integrity: sha512-ifetmTcxWfz+4qRW3pH/ujdTq2jQIj59AxJMIN26K5avYgU8dxycUETQonWiW+wPrYXA0j3Try0l1CnwVQtDqQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
@@ -2939,7 +2934,7 @@ packages:
         optional: true
     dependencies:
       eslint: 9.39.4
-      eslint-config-prettier: 9.1.2(eslint@9.39.4)
+      eslint-config-prettier: 10.1.8(eslint@9.39.4)
       prettier: 3.8.4
       prettier-linter-helpers: 1.0.1
       synckit: 0.11.13
@@ -3131,14 +3126,15 @@ packages:
       rfdc: 1.4.1
     dev: false
 
-  /fast-jwt@5.0.6:
-    resolution: {integrity: sha512-LPE7OCGUl11q3ZgW681cEU2d0d2JZ37hhJAmetCgNyW8waVaJVZXhyFF6U2so1Iim58Yc7pfxJe2P7MNetQH2g==}
+  /fast-jwt@6.2.4:
+    resolution: {integrity: sha512-IoQa53wI6TbARU2yelb0L44ggFQnP2qVcwswCSYHbCAWuwpr70icDb3QjG0v01I8Tt01rVGDkN/rRvpk0lKFTA==}
     engines: {node: '>=20'}
     dependencies:
       '@lukeed/ms': 2.0.2
       asn1.js: 5.4.1
       ecdsa-sig-formatter: 1.0.11
       mnemonist: 0.40.4
+      safe-regex2: 5.1.1
     dev: false
 
   /fast-levenshtein@2.0.6:
