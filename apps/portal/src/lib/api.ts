@@ -128,7 +128,12 @@ export interface PortalServiceItem {
   accessTechnology?: string | null;
   postcode?: string | null;
   fuelType?: string | null;
-  retailPriceDescription?: string | null;
+  supplierName?: string | null;
+  contractEndDate?: string | null;
+  renewalWindowStartDate?: string | null;
+  nextCheckInDate?: string | null;
+  renewalStatusLabel?: string | null;
+  nextReviewLabel?: string | null;
   site?: { id: string; name: string } | null;
   contact?: { id: string; firstName: string; lastName: string } | null;
 }

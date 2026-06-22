@@ -111,10 +111,10 @@ export function getFidelityEnergyIntegrationStatus() {
     readiness,
     statusLabel: statusLabel[readiness],
     message: readiness === 'DISABLED'
-      ? 'Fidelity Energy integration is disabled. Set FIDELITY_ENERGY_ENABLED=true when credentials are available.'
+      ? 'Live API integration is not currently used. Sales and contract processing are completed directly in the Fidelity portal. Itsi Business tracks relationship and renewals only.'
       : readiness === 'NOT_CONFIGURED'
-        ? 'Configure FIDELITY_ENERGY_API_BASE_URL and FIDELITY_ENERGY_API_KEY when Fidelity provides credentials.'
-        : 'API endpoints and payload shapes are not confirmed. See docs/FIDELITY_ENERGY_INTEGRATION_DISCOVERY.md.',
+        ? 'Configure credentials only if business process changes. Tracking is CRM-managed today.'
+        : 'Live API integration is not currently planned. Sales and contracts are completed in the Fidelity portal. Itsi Business tracks renewals only.',
     liveIntegrationAvailable: false,
   };
 }

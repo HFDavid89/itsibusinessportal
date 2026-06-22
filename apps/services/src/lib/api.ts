@@ -6,7 +6,7 @@ export type CatalogueStatus  = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 export type ServiceType      = 'MOBILE' | 'BROADBAND' | 'ENERGY' | 'SOFTWARE' | 'SUPPORT' | 'OTHER';
 export type MobileStatus     = 'DRAFT' | 'REQUESTED' | 'ACTIVE' | 'SUSPENDED' | 'CEASED' | 'CANCELLED';
 export type BroadbandStatus  = 'DRAFT' | 'REQUESTED' | 'ACTIVE' | 'SUSPENDED' | 'CEASED' | 'CANCELLED';
-export type EnergyStatus     = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'CEASED';
+export type EnergyStatus = 'PROSPECT' | 'REFERRED_TO_FIDELITY' | 'QUOTE_IN_PROGRESS' | 'CONTRACTED' | 'RENEWAL_DUE' | 'LOST' | 'CEASED';
 export type FuelType         = 'ELECTRICITY' | 'GAS' | 'DUAL_FUEL';
 export type WholesaleLinkStatus = 'PLACEHOLDER' | 'PENDING' | 'ACTIVE' | 'CEASED';
 
@@ -144,24 +144,45 @@ export interface BusinessBroadbandService {
 }
 
 export interface BusinessEnergyService {
-  id:                    string;
-  accountId:             string;
-  siteId:                string;
-  catalogueItemId:       string | null;
-  serviceReference:      string;
-  displayName:           string;
-  status:                EnergyStatus;
-  fuelType:              FuelType;
-  meterPointReference:   string | null;
-  retailPriceDescription: string | null;
-  contractStartDate:     string | null;
-  contractEndDate:       string | null;
-  createdAt:             string;
-  updatedAt:             string;
-  _serviceType?:         'ENERGY';
-  account?:              AccountSummary;
-  site?:                 SiteSummary;
-  catalogueItem?:        CatalogueItemSummary | null;
+  id:                       string;
+  accountId:                string;
+  siteId:                   string;
+  catalogueItemId:          string | null;
+  serviceReference:         string;
+  displayName:              string;
+  status:                   EnergyStatus;
+  fuelType:                 FuelType;
+  supplierName:             string | null;
+  fidelityReference:        string | null;
+  meterPointReference:      string | null;
+  mpan:                     string | null;
+  mprn:                     string | null;
+  contractStartDate:        string | null;
+  contractEndDate:          string | null;
+  renewalWindowStartDate:     string | null;
+  nextCheckInDate:          string | null;
+  lastCheckInDate:          string | null;
+  checkInCadenceDays:       number | null;
+  estimatedAnnualSpendPence: number | null;
+  notes:                    string | null;
+  customerVisible:          boolean;
+  retailPriceDescription:   string | null;
+  createdAt:                string;
+  updatedAt:                string;
+  _serviceType?:            'ENERGY';
+  account?:                 AccountSummary;
+  site?:                    SiteSummary;
+  catalogueItem?:           CatalogueItemSummary | null;
+}
+
+export interface EnergyDashboardStats {
+  total: number;
+  contractsEnding: { days30: number; days60: number; days90: number; days180: number };
+  renewalDue: number;
+  checkInsDue: number;
+  referralsInProgress: number;
+  contracted: number;
+  lost: number;
 }
 
 export type AnyService = (BusinessMobileService | BusinessBroadbandService | BusinessEnergyService) & { _serviceType: 'MOBILE' | 'BROADBAND' | 'ENERGY' };
@@ -325,13 +346,17 @@ export const servicesApi = {
     siteId:           string;
     displayName:      string;
     fuelType:         FuelType;
-    retailPricePence?: number;
     catalogueItemId?: string;
     status?:          EnergyStatus;
+    supplierName?:    string;
     meterPointReference?: string;
-    retailPriceDescription?: string;
+    mpan?:            string;
+    mprn?:            string;
     contractStartDate?: string;
     contractEndDate?:   string;
+    checkInCadenceDays?: number;
+    notes?:           string;
+    customerVisible?: boolean;
   }) =>
     apiFetch<{ success: true; data: BusinessEnergyService }>('/api/v1/services/energy', {
       method: 'POST',
@@ -375,5 +400,55 @@ export const servicesApi = {
   refreshWholesaleStatus: (serviceType: 'mobile' | 'broadband', serviceId: string) =>
     apiFetch<{ success: true; data: AnyService }>(`/api/v1/services/${serviceType}/${serviceId}/refresh-wholesale-status`, {
       method: 'POST',
+    }),
+};
+
+export const energyApi = {
+  dashboard: () =>
+    apiFetch<{ success: true; data: EnergyDashboardStats }>('/api/v1/services/energy/dashboard'),
+
+  list: (params?: {
+    accountId?: string; status?: string; fuelType?: string; supplier?: string;
+    renewalDue?: string; checkInDue?: string; page?: number; limit?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.accountId) qs.set('accountId', params.accountId);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.fuelType) qs.set('fuelType', params.fuelType);
+    if (params?.supplier) qs.set('supplier', params.supplier);
+    if (params?.renewalDue) qs.set('renewalDue', params.renewalDue);
+    if (params?.checkInDue) qs.set('checkInDue', params.checkInDue);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return apiFetch<{ success: true; data: BusinessEnergyService[]; meta: { total: number; page: number; limit: number } }>(
+      `/api/v1/services/energy?${qs}`,
+    );
+  },
+
+  get: (id: string) =>
+    apiFetch<{ success: true; data: BusinessEnergyService }>(`/api/v1/services/energy/${id}`),
+
+  create: (body: Parameters<typeof servicesApi.createEnergy>[0]) => servicesApi.createEnergy(body),
+
+  update: (id: string, body: Record<string, unknown>) => servicesApi.updateEnergy(id, body),
+
+  markReferred: (id: string) =>
+    apiFetch<{ success: true; data: BusinessEnergyService }>(`/api/v1/services/energy/${id}/mark-referred`, { method: 'POST' }),
+
+  markContracted: (id: string, body: { contractStartDate: string; contractEndDate: string; supplierName?: string; fidelityReference?: string }) =>
+    apiFetch<{ success: true; data: BusinessEnergyService }>(`/api/v1/services/energy/${id}/mark-contracted`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+
+  markLost: (id: string) =>
+    apiFetch<{ success: true; data: BusinessEnergyService }>(`/api/v1/services/energy/${id}/mark-lost`, { method: 'POST' }),
+
+  completeCheckIn: (id: string, body?: { notes?: string; scheduleNext?: boolean }) =>
+    apiFetch<{ success: true; data: BusinessEnergyService }>(`/api/v1/services/energy/${id}/check-ins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
     }),
 };

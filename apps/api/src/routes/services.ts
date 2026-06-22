@@ -3,14 +3,16 @@ import { z } from 'zod';
 import { prisma } from '@itsi-business/database';
 import { requirePermission } from '../middleware/rbac';
 import { registerWholesaleOrderRoutes } from './services-wholesale';
+import { registerEnergyServiceRoutes } from './energy-services';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const SERVICE_STATUSES_MOBILE_BB = ['DRAFT', 'REQUESTED', 'ACTIVE', 'SUSPENDED', 'CEASED', 'CANCELLED'] as const;
-const SERVICE_STATUSES_ENERGY    = ['DRAFT', 'ACTIVE', 'SUSPENDED', 'CEASED'] as const;
+const SERVICE_STATUSES_ENERGY    = ['PROSPECT', 'REFERRED_TO_FIDELITY', 'QUOTE_IN_PROGRESS', 'CONTRACTED', 'RENEWAL_DUE', 'LOST', 'CEASED'] as const;
 const FUEL_TYPES                 = ['ELECTRICITY', 'GAS', 'DUAL_FUEL'] as const;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Energy schemas moved to energy-tracking-service.ts (Phase 12)
+
 
 function ok<T>(data: T, meta?: object) {
   return { success: true, data, ...(meta ? { meta } : {}) };
@@ -74,21 +76,6 @@ const CreateBroadbandServiceSchema = z.object({
 
 const PatchBroadbandServiceSchema = CreateBroadbandServiceSchema.omit({ accountId: true, siteId: true }).partial();
 
-const CreateEnergyServiceSchema = z.object({
-  accountId:             z.string().min(1),
-  siteId:                z.string().min(1),
-  catalogueItemId:       z.string().optional(),
-  displayName:           z.string().min(1).max(200),
-  status:                z.enum(SERVICE_STATUSES_ENERGY).optional(),
-  fuelType:              z.enum(FUEL_TYPES).default('ELECTRICITY'),
-  meterPointReference:   z.string().max(100).optional(),
-  retailPriceDescription: z.string().max(500).optional(),
-  contractStartDate:     z.string().datetime().optional(),
-  contractEndDate:       z.string().datetime().optional(),
-});
-
-const PatchEnergyServiceSchema = CreateEnergyServiceSchema.omit({ accountId: true, siteId: true }).partial();
-
 const CreateWholesaleLinkSchema = z.object({
   businessServiceType:      z.enum(['MOBILE', 'BROADBAND']),
   businessServiceReference: z.string().min(1).max(200),
@@ -96,6 +83,8 @@ const CreateWholesaleLinkSchema = z.object({
   itsiMobileServiceOrderId:   z.string().max(200).optional(),
   safeProviderReference:      z.string().max(200).optional(),
 });
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 // ── Catalogue item include shape (reused) ─────────────────────────────────────
 
@@ -114,6 +103,8 @@ export async function serviceRoutes(app: FastifyInstance) {
 
   // Phase 10 — wholesale order routes (must register before /:id catch-all patterns)
   registerWholesaleOrderRoutes(app);
+  // Phase 12 — energy tracking routes (before /:id catch-all)
+  registerEnergyServiceRoutes(app);
 
   // ── GET /api/v1/services — aggregate list ─────────────────────────────────
   app.get('/', { preHandler: [readGuard] }, async (req: any, reply: any) => {
@@ -304,77 +295,7 @@ export async function serviceRoutes(app: FastifyInstance) {
     return reply.send(ok(service));
   });
 
-  // ── POST /api/v1/services/energy ──────────────────────────────────────────
-  app.post('/energy', { preHandler: [writeGuard] }, async (req: any, reply: any) => {
-    const parsed = CreateEnergyServiceSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(422).send(validationError(parsed.error.issues.map((i: { message: string }) => i.message).join(', ')));
-    }
-
-    const { accountId, siteId, catalogueItemId, displayName, status, fuelType, meterPointReference, retailPriceDescription, contractStartDate, contractEndDate } = parsed.data;
-
-    const [account, site] = await Promise.all([
-      prisma.businessAccount.findUnique({ where: { id: accountId }, select: { id: true } }),
-      prisma.businessSite.findFirst({ where: { id: siteId, accountId }, select: { id: true } }),
-    ]);
-    if (!account) return reply.code(404).send(notFound('Account', accountId));
-    if (!site)    return reply.code(404).send(notFound('Site', siteId));
-
-    if (catalogueItemId) {
-      const ci = await prisma.businessServiceCatalogueItem.findUnique({ where: { id: catalogueItemId }, select: { id: true, serviceType: true } });
-      if (!ci) return reply.code(404).send(notFound('Catalogue item', catalogueItemId));
-      if (ci.serviceType !== 'ENERGY') return reply.code(400).send({ success: false, error: { code: 'TYPE_MISMATCH', message: 'Catalogue item is not an ENERGY service' } });
-    }
-
-    const serviceReference = serviceRefSeq('ENE');
-    const service = await prisma.businessEnergyService.create({
-      data: {
-        accountId, siteId,
-        catalogueItemId:       catalogueItemId ?? null,
-        serviceReference,
-        displayName,
-        status:                status   ?? 'DRAFT',
-        fuelType,
-        meterPointReference:   meterPointReference   ?? null,
-        retailPriceDescription: retailPriceDescription ?? null,
-        contractStartDate:     contractStartDate ? new Date(contractStartDate) : null,
-        contractEndDate:       contractEndDate   ? new Date(contractEndDate)   : null,
-      },
-      include: { account: { select: { id: true, companyName: true, accountNumber: true } }, site: { select: { id: true, name: true, postcode: true } }, catalogueItem: { select: CATALOGUE_SELECT } },
-    });
-
-    await writeTimeline(accountId, 'ENERGY_SERVICE_CREATED', (req as any).accessContext?.userId,
-      { serviceId: service.id, serviceReference, displayName, fuelType });
-
-    return reply.code(201).send(ok(service));
-  });
-
-  // ── PATCH /api/v1/services/energy/:id ────────────────────────────────────
-  app.patch('/energy/:id', { preHandler: [writeGuard] }, async (req: any, reply: any) => {
-    const { id } = req.params as { id: string };
-    const parsed = PatchEnergyServiceSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(422).send(validationError(parsed.error.issues.map((i: { message: string }) => i.message).join(', ')));
-    }
-
-    const existing = await prisma.businessEnergyService.findUnique({ where: { id }, select: { id: true, accountId: true, serviceReference: true } });
-    if (!existing) return reply.code(404).send(notFound('Energy service', id));
-
-    const data: any = { ...parsed.data };
-    if (data.contractStartDate) data.contractStartDate = new Date(data.contractStartDate);
-    if (data.contractEndDate)   data.contractEndDate   = new Date(data.contractEndDate);
-
-    const service = await prisma.businessEnergyService.update({
-      where: { id },
-      data,
-      include: { account: { select: { id: true, companyName: true, accountNumber: true } }, site: { select: { id: true, name: true, postcode: true } }, catalogueItem: { select: CATALOGUE_SELECT } },
-    });
-
-    await writeTimeline(existing.accountId, 'ENERGY_SERVICE_UPDATED', (req as any).accessContext?.userId,
-      { serviceId: id, serviceReference: existing.serviceReference, changes: Object.keys(parsed.data) });
-
-    return reply.send(ok(service));
-  });
+  // Energy records — see energy-services.ts (Phase 12)
 
   // ── GET /api/v1/services/:id/wholesale-link ───────────────────────────────
   app.get('/:id/wholesale-link', { preHandler: [wlReadGuard] }, async (req: any, reply: any) => {

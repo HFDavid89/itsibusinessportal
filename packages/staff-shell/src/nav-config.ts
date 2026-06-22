@@ -65,6 +65,7 @@ export const SERVICES_NAV_GROUPS: NavGroupDef[] = [
       { href: '/', label: 'Dashboard', exactMatch: true },
       { href: '/catalogue', label: 'Catalogue' },
       { href: '/records', label: 'Service Records' },
+      { href: '/energy', label: 'Energy Tracking' },
     ],
   },
 ];

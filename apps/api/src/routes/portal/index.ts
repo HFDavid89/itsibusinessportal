@@ -11,6 +11,7 @@ import {
   sanitizeTicketForPortal,
 } from './helpers';
 import { CUSTOMER_INVOICE_STATUSES, OPEN_TICKET_STATUSES, balanceDuePence, toPortalStatusLabel } from './constants';
+import { toPortalEnergyStatusLabel } from '@itsi-business/core';
 
 const VALID_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 const VALID_CATEGORIES = ['GENERAL', 'BILLING', 'MOBILE', 'BROADBAND', 'ENERGY', 'SOFTWARE', 'ACCOUNT'] as const;
@@ -261,11 +262,11 @@ export async function portalRoutes(app: FastifyInstance) {
         take: 100,
       }),
       prisma.businessEnergyService.findMany({
-        where: { accountId },
+        where: { accountId, customerVisible: true },
         select: {
           id: true, serviceReference: true, displayName: true, status: true,
-          fuelType: true, retailPriceDescription: true,
-          contractStartDate: true, contractEndDate: true, createdAt: true,
+          fuelType: true, supplierName: true,
+          contractEndDate: true, renewalWindowStartDate: true, nextCheckInDate: true,
           site: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -278,7 +279,13 @@ export async function portalRoutes(app: FastifyInstance) {
       data: {
         mobile: mobile.map((s) => ({ ...s, type: 'MOBILE' as const, statusLabel: toPortalStatusLabel(s.status) })),
         broadband: broadband.map((s) => ({ ...s, type: 'BROADBAND' as const, statusLabel: toPortalStatusLabel(s.status) })),
-        energy: energy.map((s) => ({ ...s, type: 'ENERGY' as const, statusLabel: toPortalStatusLabel(s.status) })),
+        energy: energy.map((s) => ({
+          ...s,
+          type: 'ENERGY' as const,
+          statusLabel: toPortalEnergyStatusLabel(s.status),
+          renewalStatusLabel: s.status === 'RENEWAL_DUE' ? 'Renewal review due' : null,
+          nextReviewLabel: s.nextCheckInDate ? 'Next account review scheduled' : null,
+        })),
       },
     });
   });

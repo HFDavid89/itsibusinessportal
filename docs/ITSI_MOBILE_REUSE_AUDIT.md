@@ -293,4 +293,18 @@
 | Energy fulfilment | **Skip (hard excluded)** | Fidelity Energy client — **not** Itsi Mobile wholesale | Itsi Mobile energy ordering |
 | Fidelity Energy integration | **New (Phase 11)** | Placeholder client + admin readiness page | Live API until Phase 12A |
 | Portal service status | **Refocus** | `statusLabel` from portal API | Internal enum strings |
-| Portal energy self-order | **Skip (deferred)** | Coming soon message only | Phase 12A/12B |
+| Portal energy self-order | **Skip (hard excluded)** | CRM tracking + tickets only | Hard excluded |
+
+---
+
+## Phase 12 — Energy account tracking reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Service record CRUD pattern | **Refocus** | Energy tracking API + Zod validation | Supplier order submission |
+| Account 360 service panel | **Refocus** | Dedicated Energy tab with referral/check-in actions | Wholesale fulfilment |
+| Status timeline events | **Reuse** | Energy-specific timeline event types | Provider webhooks |
+| Customer portal service list | **Refocus** | Customer-safe energy labels + `customerVisible` gate | Fidelity internals, billing |
+| Fidelity API client (Phase 11) | **Deferred indefinitely** | Readiness files kept; manual Fidelity portal workflow | Live API integration |
+| Energy billing | **Skip (hard excluded)** | Not in Itsi Business | Hard excluded |
+| Itsi Mobile energy wholesale | **Skip (hard excluded)** | Energy is not Itsi Mobile wholesale | Hard excluded |

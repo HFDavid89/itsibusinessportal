@@ -54,8 +54,9 @@ export default function EnergyIntegrationPage() {
           <h2 className="text-base font-semibold text-gray-900 mb-1">Fidelity Energy</h2>
           <p className="text-sm text-gray-500 mb-4">
             Mobile and broadband fulfilment uses the Itsi Mobile wholesale bridge.
-            Energy fulfilment will use a dedicated Fidelity Energy integration boundary.
-            Live API calls are disabled until Fidelity confirms documentation and credentials.
+            Energy sales and contracts are completed manually in the Fidelity portal.
+            Itsi Business tracks energy customer relationships, renewals, and check-ins only.
+            Live API integration is not currently used.
           </p>
 
           <div className="flex items-center gap-4 flex-wrap">

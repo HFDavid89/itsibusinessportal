@@ -114,10 +114,12 @@ export const SERVICES_WIRING: WorkspaceWiring = {
     { label: 'Dashboard', href: '/', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
     { label: 'Catalogue', href: '/catalogue', enabled: true, requiredRealm: ['platform', 'staff'] },
     { label: 'Service Records', href: '/records', enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Energy Tracking', href: '/energy', enabled: true, requiredRealm: ['platform', 'staff'] },
   ],
   quickActions: [
     { label: 'Catalogue Item', href: '/catalogue/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'services.catalogue.write' },
     { label: 'Service Record', href: '/records/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'services.records.write' },
+    { label: 'Energy Tracking', href: '/energy', enabled: true, requiredRealm: ['platform', 'staff'] },
     { label: 'View Records', href: '/records', enabled: true, requiredRealm: ['platform', 'staff'] },
   ],
 };

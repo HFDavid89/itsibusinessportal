@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { AppShell } from '@itsi-business/staff-shell';
 import { servicesApi, money, fmt, type AnyService, type BusinessMobileService, type BusinessBroadbandService, type BusinessEnergyService } from '../../../lib/api';
 import { WholesaleFulfilmentPanel } from '../../../components/WholesaleFulfilmentPanel';
-import { EnergyFulfilmentPanel } from '../../../components/EnergyFulfilmentPanel';
+import { EnergyTrackingPanel } from '../../../components/EnergyTrackingPanel';
 
 const NAV_GROUPS = [
   { label: 'Services', items: [
     { href: '/',          label: 'Dashboard',  exactMatch: true },
     { href: '/catalogue', label: 'Catalogue' },
     { href: '/records',   label: 'Service Records' },
+    { href: '/energy',    label: 'Energy Tracking' },
   ]},
 ];
 
@@ -46,7 +47,7 @@ const SEL = `${INP} cursor-pointer`;
 
 const MOBILE_STATUSES    = ['DRAFT','REQUESTED','ACTIVE','SUSPENDED','CEASED','CANCELLED'];
 const BROADBAND_STATUSES = ['DRAFT','REQUESTED','ACTIVE','SUSPENDED','CEASED','CANCELLED'];
-const ENERGY_STATUSES    = ['DRAFT','ACTIVE','SUSPENDED','CEASED'];
+const ENERGY_STATUSES    = ['PROSPECT','REFERRED_TO_FIDELITY','QUOTE_IN_PROGRESS','CONTRACTED','RENEWAL_DUE','LOST','CEASED'];
 
 export default function ServiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -190,7 +191,11 @@ export default function ServiceDetailPage() {
 
         {/* Wholesale / energy fulfilment */}
         {svc._serviceType === 'ENERGY' ? (
-          <EnergyFulfilmentPanel />
+          <EnergyTrackingPanel
+            serviceId={id}
+            record={svc as BusinessEnergyService}
+            onUpdated={(updated) => setSvc(updated as AnyService)}
+          />
         ) : (
           <WholesaleFulfilmentPanel
             serviceId={id}

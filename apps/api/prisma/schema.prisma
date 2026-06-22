@@ -340,28 +340,43 @@ model BusinessBroadbandService {
   @@map("business_broadband_services")
 }
 
-// Statuses: DRAFT | ACTIVE | SUSPENDED | CEASED
+// Phase 12 — CRM-managed energy referral / renewal tracking (not supplier fulfilment).
+// Sales and contracts are handled manually via Fidelity portal.
+// Statuses: PROSPECT | REFERRED_TO_FIDELITY | QUOTE_IN_PROGRESS | CONTRACTED | RENEWAL_DUE | LOST | CEASED
 // Fuel types: ELECTRICITY | GAS | DUAL_FUEL
 model BusinessEnergyService {
-  id                     String                        @id @default(cuid())
-  accountId              String
-  siteId                 String
-  catalogueItemId        String?
-  serviceReference       String                        @unique
-  displayName            String
-  status                 String                        @default("DRAFT")
-  fuelType               String                        @default("ELECTRICITY")
-  meterPointReference    String?
-  retailPriceDescription String?
-  contractStartDate      DateTime?
-  contractEndDate        DateTime?
-  createdAt              DateTime                      @default(now())
-  updatedAt              DateTime                      @updatedAt
-  account                BusinessAccount               @relation(fields: [accountId], references: [id])
-  site                   BusinessSite                  @relation(fields: [siteId], references: [id])
-  catalogueItem          BusinessServiceCatalogueItem? @relation(fields: [catalogueItemId], references: [id])
+  id                       String                        @id @default(cuid())
+  accountId                String
+  siteId                   String
+  catalogueItemId          String?
+  serviceReference         String                        @unique
+  displayName              String
+  status                   String                        @default("PROSPECT")
+  fuelType                 String                        @default("ELECTRICITY")
+  supplierName             String?
+  fidelityReference        String?
+  meterPointReference      String?
+  mpan                     String?
+  mprn                     String?
+  contractStartDate        DateTime?
+  contractEndDate          DateTime?
+  renewalWindowStartDate   DateTime?
+  nextCheckInDate          DateTime?
+  lastCheckInDate          DateTime?
+  checkInCadenceDays       Int?                          @default(90)
+  estimatedAnnualSpendPence Int?
+  notes                    String?
+  customerVisible          Boolean                       @default(true)
+  retailPriceDescription   String?
+  createdAt                DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+  account                  BusinessAccount               @relation(fields: [accountId], references: [id])
+  site                     BusinessSite                  @relation(fields: [siteId], references: [id])
+  catalogueItem            BusinessServiceCatalogueItem? @relation(fields: [catalogueItemId], references: [id])
 
   @@index([accountId, status])
+  @@index([contractEndDate])
+  @@index([nextCheckInDate])
   @@map("business_energy_services")
 }
 

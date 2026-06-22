@@ -95,8 +95,8 @@ export default function NewServicePage() {
           catalogueItemId:  catalogueItemId  || undefined,
           contractStartDate: contractStart   || undefined,
           contractEndDate:   contractEnd     || undefined,
-          meterPointReference:    meterRef   || undefined,
-          retailPriceDescription: priceDesc  || undefined,
+          meterPointReference: meterRef || undefined,
+          notes: priceDesc || undefined,
         });
         router.push(`/records/${res.data.id}`);
       }

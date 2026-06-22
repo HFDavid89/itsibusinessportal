@@ -1,10 +1,12 @@
 # Fidelity Energy Integration Discovery
 
-> Energy fulfilment for Itsi Business uses **Fidelity Energy** — not the Itsi Mobile wholesale bridge.
-> Public Fidelity Energy API documentation was not found at the start of Phase 11.
-> **Do not implement live API calls** until Fidelity confirms documentation and credentials.
+> **Update (Phase 12):** Live Fidelity API integration is **not currently planned**.
+> Energy sales, contracts, and billing are completed manually in the Fidelity portal.
+> Itsi Business tracks customer relationships, renewals, and check-ins only.
+>
+> This checklist is retained for **future reference only** if the business process changes.
 
-## Architecture boundary
+## Architecture boundary (current)
 
 | Service type | Integration |
 |--------------|-------------|

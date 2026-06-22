@@ -35,7 +35,7 @@ const STATUS_COLOURS: Record<string, string> = {
 
 const INP = 'w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30';
 
-type TabId = 'overview' | 'contacts' | 'sites' | 'invoices' | 'services' | 'timeline';
+type TabId = 'overview' | 'contacts' | 'sites' | 'invoices' | 'services' | 'energy' | 'timeline';
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -394,6 +394,100 @@ function ServicesPanel({ accountId }: { accountId: string }) {
   );
 }
 
+// ── Energy Panel ──────────────────────────────────────────────────────────────
+
+interface EnergyRecord {
+  id: string;
+  displayName: string;
+  status: string;
+  fuelType: string;
+  supplierName?: string | null;
+  contractEndDate?: string | null;
+  nextCheckInDate?: string | null;
+  renewalWindowStartDate?: string | null;
+  notes?: string | null;
+  site?: { name: string } | null;
+}
+
+const ENERGY_STATUS_CLS: Record<string, string> = {
+  PROSPECT: 'bg-border/60 text-muted border-border',
+  REFERRED_TO_FIDELITY: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  QUOTE_IN_PROGRESS: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+  CONTRACTED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  RENEWAL_DUE: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  LOST: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  CEASED: 'bg-border/40 text-muted/60 border-border/40',
+};
+
+function EnergyPanel({ accountId }: { accountId: string }) {
+  const [records, setRecords] = useState<EnergyRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [acting, setActing] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await crmApi.energyRecords(accountId);
+      setRecords(res.data);
+    } catch { setError('Failed to load energy records'); }
+    finally { setLoading(false); }
+  }, [accountId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function act(id: string, action: 'referred' | 'checkin' | 'lost') {
+    setActing(id);
+    try {
+      if (action === 'referred') await crmApi.markEnergyReferred(id);
+      if (action === 'checkin') await crmApi.completeEnergyCheckIn(id);
+      if (action === 'lost') await crmApi.markEnergyLost(id);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Action failed');
+    } finally { setActing(''); }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted">Energy sales are completed in the Fidelity portal. Track referrals, renewals, and check-ins here.</p>
+      {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">{error}</div>}
+      {loading ? (
+        <div className="space-y-2">{[...Array(2)].map((_, i) => <div key={i} className="h-16 bg-surface-raised rounded-xl animate-pulse" />)}</div>
+      ) : records.length === 0 ? (
+        <div className="text-center py-10 text-sm text-muted">No energy records for this account.</div>
+      ) : (
+        <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
+          {records.map((r) => (
+            <div key={r.id} className="px-4 py-3 bg-surface space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{r.displayName}</p>
+                  <p className="text-[11px] text-muted">{r.fuelType}{r.site ? ` · ${r.site.name}` : ''}{r.supplierName ? ` · ${r.supplierName}` : ''}</p>
+                  <p className="text-[11px] text-muted">Contract end: {r.contractEndDate ? new Date(r.contractEndDate).toLocaleDateString('en-GB') : '—'} · Next check-in: {r.nextCheckInDate ? new Date(r.nextCheckInDate).toLocaleDateString('en-GB') : '—'}</p>
+                </div>
+                <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full border font-medium ${ENERGY_STATUS_CLS[r.status] ?? ENERGY_STATUS_CLS.PROSPECT}`}>{r.status.replace(/_/g, ' ')}</span>
+              </div>
+              {r.notes && <p className="text-[11px] text-muted">{r.notes}</p>}
+              <div className="flex flex-wrap gap-2">
+                {r.status === 'PROSPECT' && (
+                  <button type="button" disabled={acting === r.id} onClick={() => act(r.id, 'referred')} className="text-[11px] px-2 py-1 rounded border border-border hover:bg-surface-raised disabled:opacity-50">Mark Referred</button>
+                )}
+                {!['LOST','CEASED'].includes(r.status) && (
+                  <button type="button" disabled={acting === r.id} onClick={() => act(r.id, 'checkin')} className="text-[11px] px-2 py-1 rounded border border-border hover:bg-surface-raised disabled:opacity-50">Complete Check-in</button>
+                )}
+                {!['LOST','CEASED'].includes(r.status) && (
+                  <button type="button" disabled={acting === r.id} onClick={() => act(r.id, 'lost')} className="text-[11px] px-2 py-1 rounded border border-border hover:bg-surface-raised disabled:opacity-50">Mark Lost</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Timeline Panel ────────────────────────────────────────────────────────────
 
 const EVENT_LABELS: Record<string, string> = {
@@ -403,6 +497,13 @@ const EVENT_LABELS: Record<string, string> = {
   CONTACT_UPDATED: 'Contact updated',
   SITE_ADDED: 'Site added',
   SITE_UPDATED: 'Site updated',
+  ENERGY_REFERRED_TO_FIDELITY: 'Energy referred to Fidelity',
+  ENERGY_CONTRACTED: 'Energy contract recorded',
+  ENERGY_CHECK_IN_COMPLETED: 'Energy check-in completed',
+  ENERGY_MARKED_LOST: 'Energy opportunity marked lost',
+  ENERGY_RENEWAL_WINDOW_STARTED: 'Energy renewal window started',
+  ENERGY_SERVICE_CREATED: 'Energy record created',
+  ENERGY_SERVICE_UPDATED: 'Energy record updated',
 };
 
 function TimelinePanel({ accountId }: { accountId: string }) {
@@ -471,6 +572,7 @@ export default function AccountDetailPage() {
     { id: 'sites',     label: 'Sites',     count: account?._count?.sites },
     { id: 'invoices',  label: 'Invoices',  count: account?._count?.invoices },
     { id: 'services',  label: 'Services' },
+    { id: 'energy',    label: 'Energy' },
     { id: 'timeline',  label: 'Timeline' },
   ];
 
@@ -575,6 +677,7 @@ export default function AccountDetailPage() {
             {tab === 'sites'    && <SitesPanel accountId={id} />}
             {tab === 'invoices' && <InvoicesPanel accountId={id} />}
             {tab === 'services' && <ServicesPanel accountId={id} />}
+            {tab === 'energy'   && <EnergyPanel accountId={id} />}
             {tab === 'timeline' && <TimelinePanel accountId={id} />}
           </div>
         )}

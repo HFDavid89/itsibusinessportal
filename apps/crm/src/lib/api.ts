@@ -257,4 +257,28 @@ export const crmApi = {
     const qs = q.toString();
     return apiFetch<ApiResponse<TimelineEvent[]>>(`/api/v1/accounts/${accountId}/timeline${qs ? `?${qs}` : ''}`);
   },
+
+  energyRecords: (accountId: string) =>
+    apiFetch<ApiResponse<EnergyRecord[]>>(`/api/v1/services/energy?accountId=${accountId}&limit=100`),
+
+  markEnergyReferred: (id: string) =>
+    apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/mark-referred`, { method: 'POST' }),
+
+  completeEnergyCheckIn: (id: string) =>
+    apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/check-ins`, { method: 'POST', body: JSON.stringify({}) }),
+
+  markEnergyLost: (id: string) =>
+    apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/mark-lost`, { method: 'POST' }),
 };
+
+interface EnergyRecord {
+  id: string;
+  displayName: string;
+  status: string;
+  fuelType: string;
+  supplierName?: string | null;
+  contractEndDate?: string | null;
+  nextCheckInDate?: string | null;
+  notes?: string | null;
+  site?: { name: string } | null;
+}
