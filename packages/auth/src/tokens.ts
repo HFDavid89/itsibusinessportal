@@ -6,6 +6,7 @@ export interface TokenPayload {
   realm: AuthRealm;
   email: string;
   roles: string[];
+  permissions?: string[];
   /** Portal realm: business account the contact belongs to. */
   accountId?: string;
 }

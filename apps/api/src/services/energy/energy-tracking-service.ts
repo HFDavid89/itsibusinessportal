@@ -9,6 +9,7 @@ import {
   isRenewalDue,
 } from '@itsi-business/core';
 import { writeServiceLifecycleEvent } from '../service-lifecycle-events';
+import { ensureEnergyReviewWorkItem } from '../work-items/work-item-service';
 
 export const ENERGY_STATUSES = ENERGY_TRACKING_STATUSES;
 export const FUEL_TYPES = ENERGY_FUEL_TYPES;
@@ -420,6 +421,13 @@ export async function completeEnergyCheckIn(id: string, body: z.infer<typeof Com
       newStatus: 'RENEWAL_DUE',
       reason: 'renewal_window_started',
     }, actorId);
+
+    await ensureEnergyReviewWorkItem({
+      accountId: existing.accountId,
+      serviceId: id,
+      displayName: existing.displayName,
+      reason: 'Energy contract entered renewal window — staff review required.',
+    });
   }
 
   return { record: { ...record, _serviceType: 'ENERGY' as const } };

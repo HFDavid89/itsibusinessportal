@@ -323,7 +323,8 @@ describe('Phase 13B-1 — simulated wholesale contract verification', () => {
 
       const second = await requestWholesaleOrderForService('MOBILE', service.id, { confirm: true });
       assert.equal(second.error?.status, 400);
-      assert.match(String(second.error?.body), /already has a wholesale link/i);
+      const errBody = second.error?.body as { error?: { message?: string } } | undefined;
+      assert.match(errBody?.error?.message ?? '', /already has a wholesale link/i);
     });
   });
 });

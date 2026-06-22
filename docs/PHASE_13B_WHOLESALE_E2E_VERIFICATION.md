@@ -35,9 +35,11 @@ Deprecated generic `/wholesale/orders` exists only on **Itsi Business staff prox
 
 1. **Itsi Mobile 14W** — implement/verify family routes + contract tests (separate repo)
 2. **Phase 13B-1** — simulated contract verification in Itsi Business (mock server)
-3. **Phase 14** — staff request workflow and SLA hardening (local lifecycle only)
+3. **Phase 14** — staff request workflow and SLA hardening (local lifecycle only) — **done**
 4. **Phase 13B-2** — e2e smoke test from Itsi Business against live/staging Itsi Mobile
 5. **Only then** — live customer SIM/network self-service
+
+> **Note:** 13B-1 simulated verification allows the Phase 14 staff workflow foundation to proceed without live Itsi Mobile. 13B-2 real staging E2E remains required before live network controls.
 
 ---
 

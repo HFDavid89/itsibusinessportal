@@ -16,6 +16,11 @@ import {
   mapProductCategory,
   mapServiceCategory,
 } from '../../services/portal/portal-service-detail';
+import {
+  ensureProductEnquiryWorkItem,
+  ensureCustomerServiceRequestWorkItem,
+  ensureSimMetadataChangeWorkItem,
+} from '../../services/work-items/work-item-service';
 
 const ProductEnquirySchema = z.object({
   message: z.string().min(1).max(2000).optional(),
@@ -119,6 +124,12 @@ export function registerPortalPhase13Routes(app: FastifyInstance) {
       ticketNumber: ticket.ticketNumber,
     });
 
+    await ensureProductEnquiryWorkItem({
+      accountId,
+      ticketId: ticket.id,
+      productName: product.name,
+    });
+
     return reply.code(201).send({ success: true, data: { ticket, productName: product.name } });
   });
 
@@ -179,6 +190,15 @@ export function registerPortalPhase13Routes(app: FastifyInstance) {
       serviceType: service.type,
       ticketId: ticket.id,
       ticketNumber: ticket.ticketNumber,
+    });
+
+    await ensureCustomerServiceRequestWorkItem({
+      accountId,
+      ticketId: ticket.id,
+      serviceType: service.type,
+      serviceId: service.id,
+      displayName: service.displayName,
+      isEnergyReview: service.type === 'ENERGY',
     });
 
     return reply.code(201).send({ success: true, data: { ticket } });
@@ -255,6 +275,17 @@ export function registerPortalPhase13Routes(app: FastifyInstance) {
       changes: Object.keys(parsed.data),
     });
 
+    const changeDesc = Object.entries(parsed.data)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ');
+
+    await ensureSimMetadataChangeWorkItem({
+      accountId,
+      serviceId: id,
+      displayName: updated.displayName,
+      changes: `Customer updated ${changeDesc}`,
+    });
+
     return reply.send({
       success: true,
       data: { ...updated, statusLabel: toPortalStatusLabel(updated.status) },
@@ -315,6 +346,14 @@ export function registerPortalPhase13Routes(app: FastifyInstance) {
       serviceReference: sim.serviceReference,
       ticketId: ticket.id,
       ticketNumber: ticket.ticketNumber,
+    });
+
+    await ensureCustomerServiceRequestWorkItem({
+      accountId,
+      ticketId: ticket.id,
+      serviceType: 'MOBILE',
+      serviceId: sim.id,
+      displayName: sim.displayName,
     });
 
     return reply.code(201).send({ success: true, data: { ticket } });

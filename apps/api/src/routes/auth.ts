@@ -23,19 +23,30 @@ const LoginSchema = z.object({
   password: z.string().min(1),
 });
 
+function flattenPermissions(roles: { name: string; permissions: string[] }[]): string[] {
+  const set = new Set<string>();
+  for (const role of roles) {
+    if (role.permissions.includes('*')) return ['*'];
+    for (const p of role.permissions) set.add(p);
+  }
+  return [...set];
+}
+
 function makeToken(user: {
   id: string;
   email: string;
   realm: string;
-  roles: { name: string }[];
+  roles: { name: string; permissions: string[] }[];
   accountId?: string;
 }): string {
+  const permissions = flattenPermissions(user.roles);
   return signToken(
     {
       sub:   user.id,
       email: user.email,
       realm: user.realm as 'platform' | 'staff' | 'portal',
       roles: user.roles.map((r) => r.name),
+      permissions,
       ...(user.accountId ? { accountId: user.accountId } : {}),
     },
     process.env.JWT_SECRET ?? '',

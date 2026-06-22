@@ -183,10 +183,22 @@ async function main() {
 
   const staffRole = await prisma.staffRole.upsert({
     where: { name: 'STAFF' },
-    update: {},
+    update: {
+      permissions: [
+        'crm.accounts.read',
+        'desk.tickets.read', 'desk.tickets.write', 'desk.tickets.assign', 'desk.tickets.internal_notes',
+        'work_items.read', 'work_items.write', 'work_items.assign', 'work_items.resolve', 'work_items.comment',
+        'services.records.read', 'services.wholesale_links.read',
+      ],
+    },
     create: {
       name: 'STAFF',
-      permissions: ['accounts:read', 'tickets:read', 'tickets:write'],
+      permissions: [
+        'crm.accounts.read',
+        'desk.tickets.read', 'desk.tickets.write', 'desk.tickets.assign', 'desk.tickets.internal_notes',
+        'work_items.read', 'work_items.write', 'work_items.assign', 'work_items.resolve', 'work_items.comment',
+        'services.records.read', 'services.wholesale_links.read',
+      ],
     },
   });
 

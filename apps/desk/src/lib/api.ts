@@ -37,6 +37,15 @@ export interface BusinessTicket {
   site?:    { id: string; name: string; addressLine1: string; postcode: string } | null;
   threads?: BusinessTicketThread[];
   _latestThread?: Pick<BusinessTicketThread, 'id' | 'body' | 'isInternal' | 'createdAt'>;
+  workItems?: Array<{
+    id: string;
+    type: string;
+    status: string;
+    priority: string;
+    title: string;
+    slaStatus?: string;
+    dueAt?: string | null;
+  }>;
 }
 
 export interface BusinessTicketThread {

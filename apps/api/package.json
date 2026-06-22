@@ -14,7 +14,8 @@
     "test:wholesale-contract": "tsx --test src/services/wholesale/wholesale-contract.test.ts",
     "test:wholesale-simulated": "tsx --test src/services/wholesale/wholesale-simulated.test.ts",
     "test:wholesale": "tsx --test src/services/wholesale/wholesale-contract.test.ts src/services/wholesale/wholesale-simulated.test.ts",
-    "test": "pnpm test:wholesale"
+    "test:sla": "tsx --test src/services/work-items/sla-policy.test.ts",
+    "test": "pnpm test:wholesale && pnpm test:sla"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.1",

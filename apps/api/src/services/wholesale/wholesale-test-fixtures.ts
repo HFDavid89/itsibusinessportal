@@ -233,6 +233,10 @@ export async function getTimelineEvents(accountId: string, type?: string) {
 }
 
 export async function cleanupWholesaleTestFixture(fixture: WholesaleTestFixture): Promise<void> {
+  await prisma.businessWorkItemComment.deleteMany({
+    where: { workItem: { accountId: fixture.accountId } },
+  });
+  await prisma.businessWorkItem.deleteMany({ where: { accountId: fixture.accountId } });
   await prisma.timelineEvent.deleteMany({ where: { accountId: fixture.accountId } });
   await prisma.businessMobileService.deleteMany({ where: { accountId: fixture.accountId } });
   await prisma.businessBroadbandService.deleteMany({ where: { accountId: fixture.accountId } });

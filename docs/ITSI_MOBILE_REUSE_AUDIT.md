@@ -330,3 +330,19 @@
 | Staff/platform roles | **Skip (hard excluded)** | Separate `portalRole` field | Staff RBAC reuse |
 | Fidelity energy ordering | **Skip (hard excluded)** | Energy review ticket only | Fidelity API |
 | Itsi Mobile wholesale bridge | **Skip (staff-only)** | Staff services app only | Portal wholesale URLs |
+
+---
+
+## Phase 14 — Staff workflow and SLA hardening reuse decisions
+
+| Source (Itsi Mobile CRM) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Account 360 next-action panel pattern | **Refocus** | `BusinessWorkItem` + Services work queue UI | Mobile subscriptions/billing tabs |
+| Health summary / SLA chips | **Refocus** | `@itsi-business/core` SLA policy + due/breach filters | LTV, SIM-specific metrics |
+| Work queue tab bar / cockpit cards | **Refocus** | Services `/work-queue` list + detail | Provider-specific tabs (Gamma, Porting) |
+| Ticket ↔ operational work linkage | **Refocus** | Auto work items from portal tickets; Desk sidebar links | Duplicated internal notes in ticket threads |
+| Wholesale fulfilment follow-up | **Refocus** | `WHOLESALE_ORDER` / `WHOLESALE_STATUS_REVIEW` work items | Live upstream unless `ITSI_MOBILE_WHOLESALE_ENABLED` |
+| Auto-cease on upstream failure | **Skip (hard excluded)** | Staff review only — no retail service auto-cancel | Hard excluded until 13B-2 |
+| Live SIM/network staff controls | **Skip (blocked)** | Not in Phase 14 | Blocked until 13B-2 + live wholesale |
+| Portal work item visibility | **Skip (hard excluded)** | Portal sees tickets only | Work item IDs, SLA, internal comments |
+| Itsi Mobile task/queue models | **Skip** | New `BusinessWorkItem` on Business schema | Direct model import |

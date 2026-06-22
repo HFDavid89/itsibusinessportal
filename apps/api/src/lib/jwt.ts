@@ -11,6 +11,8 @@ export interface JwtPayload {
   realm: 'platform' | 'staff' | 'portal';
   /** Staff/platform: assigned roles. Portal: not used. */
   roles?: string[];
+  /** Staff/platform: flattened permission strings from roles. */
+  permissions?: string[];
   /** Portal: the business account ID the contact belongs to. */
   accountId?: string;
   iat?: number;

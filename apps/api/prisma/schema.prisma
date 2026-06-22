@@ -83,6 +83,7 @@ model BusinessAccount {
   energyServices BusinessEnergyService[]
   portalUsers    PortalUser[]
   timelineEvents TimelineEvent[]
+  workItems      BusinessWorkItem[]
 
   @@map("business_accounts")
 }
@@ -235,6 +236,7 @@ model BusinessTicket {
   account                      BusinessAccount @relation(fields: [accountId], references: [id])
   site                         BusinessSite?   @relation(fields: [siteId], references: [id])
   threads                      BusinessTicketThread[]
+  workItems                    BusinessWorkItem[]
 
   @@index([accountId, status])
   @@index([status, priority])
@@ -405,10 +407,64 @@ model ItsiMobileWholesaleServiceLink {
 
   mobileServices    BusinessMobileService[]
   broadbandServices BusinessBroadbandService[]
+  workItems         BusinessWorkItem[]
 
   @@index([businessAccountId])
   @@index([businessServiceReference])
   @@map("itsi_mobile_wholesale_service_links")
+}
+
+// ─── STAFF WORK QUEUE (Phase 14) ─────────────────────────────────────────────
+// Operational work items for staff — not exposed to portal users.
+
+model BusinessWorkItem {
+  id                    String   @id @default(cuid())
+  type                  String
+  status                String   @default("OPEN")
+  priority              String   @default("NORMAL")
+  accountId             String
+  serviceType           String?
+  serviceId             String?
+  ticketId              String?
+  wholesaleLinkId       String?
+  assignedToStaffUserId String?
+  dueAt                 DateTime?
+  slaBreachedAt         DateTime?
+  completedAt           DateTime?
+  source                String   @default("STAFF")
+  title                 String
+  description           String?
+  internalNotes         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  account       BusinessAccount               @relation(fields: [accountId], references: [id])
+  ticket        BusinessTicket?               @relation(fields: [ticketId], references: [id])
+  wholesaleLink ItsiMobileWholesaleServiceLink? @relation(fields: [wholesaleLinkId], references: [id])
+  comments      BusinessWorkItemComment[]
+
+  @@index([status, priority])
+  @@index([accountId, status])
+  @@index([assignedToStaffUserId, status])
+  @@index([dueAt])
+  @@index([type, status])
+  @@index([ticketId])
+  @@index([serviceId])
+  @@index([wholesaleLinkId])
+  @@map("business_work_items")
+}
+
+model BusinessWorkItemComment {
+  id         String           @id @default(cuid())
+  workItemId String
+  body       String
+  authorId   String
+  authorType String           @default("STAFF")
+  createdAt  DateTime         @default(now())
+  workItem   BusinessWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+
+  @@index([workItemId])
+  @@map("business_work_item_comments")
 }
 
 // ─── AUDIT / TIMELINE ─────────────────────────────────────────────────────────

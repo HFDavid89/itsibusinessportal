@@ -14,6 +14,7 @@ import { CUSTOMER_INVOICE_STATUSES, OPEN_TICKET_STATUSES, balanceDuePence, toPor
 import { toPortalEnergyStatusLabel } from '@itsi-business/core';
 import { registerPortalPhase13Routes, PortalRoleSchema } from './portal-phase13';
 import { resolveServiceDisplayNames } from '../../services/portal/portal-service-detail';
+import { ensureCustomerServiceRequestWorkItem } from '../../services/work-items/work-item-service';
 
 const VALID_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 const VALID_CATEGORIES = ['GENERAL', 'BILLING', 'MOBILE', 'BROADBAND', 'ENERGY', 'SOFTWARE', 'ACCOUNT'] as const;
@@ -471,6 +472,12 @@ export async function portalRoutes(app: FastifyInstance) {
       }
 
       return t;
+    });
+
+    await ensureCustomerServiceRequestWorkItem({
+      accountId,
+      ticketId: ticket.id,
+      displayName: ticket.subject,
     });
 
     return reply.code(201).send({ success: true, data: sanitizeTicketForPortal(ticket) });

@@ -452,3 +452,105 @@ export const energyApi = {
       body: JSON.stringify(body ?? {}),
     }),
 };
+
+// ── Work Queue (Phase 14) ─────────────────────────────────────────────────────
+
+export type WorkItemType =
+  | 'WHOLESALE_ORDER' | 'WHOLESALE_STATUS_REVIEW' | 'CUSTOMER_SERVICE_REQUEST'
+  | 'SIM_METADATA_CHANGE' | 'PRODUCT_ENQUIRY' | 'ENERGY_REVIEW' | 'BILLING_QUERY' | 'SUPPORT_ESCALATION';
+
+export type WorkItemStatus =
+  | 'OPEN' | 'IN_PROGRESS' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL'
+  | 'WAITING_ITSI_MOBILE' | 'RESOLVED' | 'CANCELLED';
+
+export type SlaStatus = 'ON_TRACK' | 'DUE_SOON' | 'BREACHED' | 'COMPLETED';
+
+export interface WorkItemComment {
+  id: string;
+  workItemId: string;
+  body: string;
+  authorId: string;
+  authorType: string;
+  createdAt: string;
+}
+
+export interface WorkItem {
+  id: string;
+  type: WorkItemType;
+  status: WorkItemStatus;
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  accountId: string;
+  serviceType?: string | null;
+  serviceId?: string | null;
+  ticketId?: string | null;
+  wholesaleLinkId?: string | null;
+  assignedToStaffUserId?: string | null;
+  dueAt?: string | null;
+  slaBreachedAt?: string | null;
+  completedAt?: string | null;
+  source: string;
+  title: string;
+  description?: string | null;
+  internalNotes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  slaStatus?: SlaStatus;
+  slaBreached?: boolean;
+  account?: { id: string; companyName: string; accountNumber: string };
+  ticket?: { id: string; ticketNumber: string; subject: string; status: string } | null;
+  wholesaleLink?: {
+    id: string;
+    status: string;
+    businessServiceType: string;
+    businessServiceReference: string;
+    itsiMobileWholesaleOrderId: string | null;
+  } | null;
+  comments?: WorkItemComment[];
+}
+
+export interface WorkQueueStats {
+  open: number;
+  assignedToMe: number;
+  unassigned: number;
+  dueSoon: number;
+  breached: number;
+  waitingItsiMobile: number;
+  productEnquiries: number;
+  energyReviews: number;
+}
+
+export const workItemsApi = {
+  stats: () =>
+    apiFetch<{ success: true; data: WorkQueueStats }>('/api/v1/work-items/stats'),
+
+  list: (params?: Record<string, string>) => {
+    const qs = new URLSearchParams(params ?? {});
+    return apiFetch<{ success: true; data: WorkItem[]; meta: { total: number; page: number; limit: number } }>(
+      `/api/v1/work-items?${qs}`,
+    );
+  },
+
+  get: (id: string) =>
+    apiFetch<{ success: true; data: WorkItem }>(`/api/v1/work-items/${id}`),
+
+  assign: (id: string, staffUserId: string) =>
+    apiFetch<{ success: true; data: WorkItem }>(`/api/v1/work-items/${id}/assign`, {
+      method: 'POST',
+      body: { staffUserId },
+    }),
+
+  start: (id: string) =>
+    apiFetch<{ success: true; data: WorkItem }>(`/api/v1/work-items/${id}/start`, { method: 'POST' }),
+
+  resolve: (id: string, internalNotes?: string) =>
+    apiFetch<{ success: true; data: WorkItem }>(`/api/v1/work-items/${id}/resolve`, {
+      method: 'POST',
+      body: internalNotes ? { internalNotes } : {},
+    }),
+
+  comment: (id: string, body: string) =>
+    apiFetch<{ success: true; data: WorkItemComment }>(`/api/v1/work-items/${id}/comment`, {
+      method: 'POST',
+      body: { body },
+    }),
+};

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { AppShell } from '@itsi-business/staff-shell';
+import { AppShell, WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import { deskApi, type BusinessTicket, type BusinessTicketThread, type TicketStatus, type TicketPriority, type TicketCategory } from '../../../lib/api';
 
 const NAV_GROUPS = [
@@ -439,6 +439,25 @@ export default function TicketDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Linked work items */}
+            {(ticket.workItems?.length ?? 0) > 0 && (
+              <div className="bg-surface border border-border rounded-2xl p-4 space-y-2">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Work Queue</h2>
+                {ticket.workItems!.map((wi) => (
+                  <a
+                    key={wi.id}
+                    href={`${WORKSPACE_URLS.services}/work-queue/${wi.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-lg border border-border px-3 py-2 hover:border-accent/30 transition-colors"
+                  >
+                    <p className="text-xs font-semibold text-foreground">{wi.title}</p>
+                    <p className="text-[10px] text-muted mt-0.5">{wi.type.replace(/_/g, ' ')} · {wi.status.replace(/_/g, ' ')}</p>
+                  </a>
+                ))}
+              </div>
+            )}
 
             {/* Escalation — placeholder */}
             <div className="bg-surface border border-border rounded-2xl p-4 space-y-3">

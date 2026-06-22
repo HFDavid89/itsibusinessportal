@@ -11,6 +11,7 @@ export interface AccessContext {
   email: string;
   realm: 'platform' | 'staff' | 'portal';
   roles: string[];
+  permissions?: string[];
   accountId?: string;
 }
 
@@ -58,6 +59,7 @@ export async function requireAuth(
     email: payload.email,
     realm: payload.realm,
     roles: payload.roles ?? [],
+    permissions: (payload as { permissions?: string[] }).permissions ?? [],
     accountId: payload.accountId,
   };
 }

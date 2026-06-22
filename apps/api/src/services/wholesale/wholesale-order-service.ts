@@ -26,6 +26,7 @@ import {
   isUpstreamFailureStatus,
 } from './status-mapper';
 import { writeServiceLifecycleEvent } from '../service-lifecycle-events';
+import { ensureWholesaleOrderWorkItem, ensureWholesaleStatusReviewWorkItem } from '../work-items/work-item-service';
 
 export const RequestWholesaleOrderSchema = z.object({
   quoteId:      z.string().max(200).optional(),
@@ -300,6 +301,15 @@ export async function requestWholesaleOrderForService(
       );
     }
 
+    await ensureWholesaleOrderWorkItem({
+      accountId: service.accountId,
+      serviceType,
+      serviceId,
+      serviceReference: service.serviceReference,
+      wholesaleLinkId: link.id,
+      displayName: service.displayName,
+    }, tx);
+
     return { service: updatedService, wholesaleLink: link };
   });
 
@@ -442,6 +452,19 @@ export async function refreshWholesaleStatusForService(
 
     return { service: updatedService, wholesaleLink: link };
   });
+
+  if (insights.staffWarning || isUpstreamFailureStatus(statusResult.status)) {
+    await ensureWholesaleStatusReviewWorkItem({
+      accountId: service.accountId,
+      serviceType,
+      serviceId,
+      serviceReference: service.serviceReference,
+      wholesaleLinkId: result.wholesaleLink.id,
+      displayName: service.displayName,
+      staffWarning: insights.staffWarning,
+      upstreamFailure: isUpstreamFailureStatus(statusResult.status),
+    });
+  }
 
   return {
     data: {

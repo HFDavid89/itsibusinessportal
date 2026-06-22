@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@itsi-business/database';
 import { requirePermission } from '../middleware/rbac';
+import { listWorkItemsForTicket } from '../services/work-items/work-item-service';
 
 const VALID_STATUSES   = ['OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'WAITING_ITSI_MOBILE', 'RESOLVED', 'CLOSED'] as const;
 const VALID_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
@@ -148,7 +149,9 @@ export async function ticketRoutes(app: FastifyInstance) {
       },
     });
     if (!ticket) return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
-    return reply.send({ success: true, data: ticket });
+
+    const workItems = await listWorkItemsForTicket(id);
+    return reply.send({ success: true, data: { ...ticket, workItems } });
   });
 
   // PATCH /:id — update ticket status/priority/assignment
