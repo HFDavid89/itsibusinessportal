@@ -101,13 +101,13 @@ export default function ServiceDetailPage() {
   }
 
   if (loading) return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-8 text-sm text-muted">Loading…</div>
     </AppShell>
   );
 
   if (error || !svc) return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-8 text-sm text-danger">{error || 'Not found'}</div>
     </AppShell>
   );
@@ -116,7 +116,7 @@ export default function ServiceDetailPage() {
   const statuses = svc._serviceType === 'ENERGY' ? ENERGY_STATUSES : svc._serviceType === 'MOBILE' ? MOBILE_STATUSES : BROADBAND_STATUSES;
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-5 max-w-4xl mx-auto space-y-4">
 
         <div className="flex items-center gap-2 text-xs text-muted">

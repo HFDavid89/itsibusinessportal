@@ -72,7 +72,7 @@ export default function DeskDashboardPage() {
   ];
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
       <div className="p-5 space-y-5">
 
         {/* Header */}

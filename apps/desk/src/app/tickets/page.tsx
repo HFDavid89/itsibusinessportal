@@ -76,7 +76,7 @@ export default function TicketsPage() {
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t); }, [load]);
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
       <div className="flex flex-col h-full min-h-0">
 
         {/* Toolbar */}

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell } from '@itsi-business/staff-shell';
-import { WORKSPACE_URLS } from '@itsi-business/staff-shell';
+import { AppShell, WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import { PageHeader, Card, Badge } from '@itsi-business/ui';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:17001';
@@ -73,7 +72,7 @@ export default function WholesaleConnectionPage() {
   }
 
   return (
-    <AppShell navGroups={navGroups} brand={{ name: 'Itsi Business', badge: 'Admin' }}>
+    <AppShell navGroups={navGroups} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
       <div className="p-8 max-w-2xl">
         <PageHeader
           title="Wholesale Connection"

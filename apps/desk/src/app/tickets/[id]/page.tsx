@@ -300,7 +300,7 @@ export default function TicketDetailPage() {
 
   if (loading) {
     return (
-      <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }}>
+      <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
         <div className="p-8 flex items-center justify-center text-sm text-muted">Loading ticket…</div>
       </AppShell>
     );
@@ -308,7 +308,7 @@ export default function TicketDetailPage() {
 
   if (error || !ticket) {
     return (
-      <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }}>
+      <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
         <div className="p-8">
           <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{error || 'Ticket not found'}</div>
           <Link href="/tickets" className="mt-4 inline-block text-xs text-accent hover:underline">← Back to Tickets</Link>
@@ -324,7 +324,7 @@ export default function TicketDetailPage() {
   ];
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
       <div className="p-5 space-y-4 max-w-5xl mx-auto">
 
         {/* Breadcrumb */}

@@ -93,7 +93,7 @@ function RecordsPageInner() {
   const pages = Math.ceil(total / LIMIT);
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-5 max-w-6xl mx-auto space-y-4">
 
         <div className="flex items-center justify-between gap-4 flex-wrap">

@@ -20,6 +20,8 @@ import { invoiceRoutes } from './routes/invoices';
 import { catalogueRoutes } from './routes/catalogue';
 import { serviceRoutes } from './routes/services';
 import { wholesaleRoutes } from './routes/wholesale';
+import { staffUserRoutes } from './routes/staff-users';
+import { statsRoutes } from './routes/stats';
 
 const PORT = parseInt(process.env.PORT ?? '4001', 10);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -38,7 +40,9 @@ async function start() {
   await app.register(invoiceRoutes,   { prefix: '/api/v1/invoices' });
   await app.register(catalogueRoutes, { prefix: '/api/v1/services/catalogue' });
   await app.register(serviceRoutes,   { prefix: '/api/v1/services' });
-  await app.register(wholesaleRoutes, { prefix: '/api/v1/wholesale' });
+  await app.register(wholesaleRoutes,  { prefix: '/api/v1/wholesale' });
+  await app.register(staffUserRoutes,  { prefix: '/api/v1/admin/staff' });
+  await app.register(statsRoutes,      { prefix: '/api/v1/stats' });
 
   try {
     await app.listen({ port: PORT, host: HOST });

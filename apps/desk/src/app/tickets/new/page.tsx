@@ -63,7 +63,7 @@ export default function NewTicketPage() {
   }
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
       <div className="p-5 max-w-2xl mx-auto space-y-5">
 
         {/* Breadcrumb */}

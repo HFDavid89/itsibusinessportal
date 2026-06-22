@@ -26,8 +26,11 @@ declare module 'fastify' {
  */
 async function extractPayload(request: FastifyRequest): Promise<JwtPayload | null> {
   const auth = request.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return null;
-  const token = auth.slice(7);
+  const token = auth?.startsWith('Bearer ')
+    ? auth.slice(7)
+    : (request.cookies as Record<string, string>)?.['itsi_biz_token'];
+
+  if (!token) return null;
   try {
     const secret  = process.env.JWT_SECRET ?? '';
     const payload = verifyToken(token, secret) as unknown as JwtPayload;

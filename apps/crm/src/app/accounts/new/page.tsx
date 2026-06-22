@@ -56,7 +56,7 @@ export default function NewAccountPage() {
   };
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'CRM' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'CRM' }} workspace="crm">
       <div className="max-w-[640px] mx-auto p-6">
 
         {/* Breadcrumb */}

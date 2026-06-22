@@ -1,5 +1,4 @@
-import { AppShell } from '@itsi-business/staff-shell';
-import { WORKSPACE_URLS } from '@itsi-business/staff-shell';
+import { AppShell, WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import { PageHeader, Card, Badge } from '@itsi-business/ui';
 
 const navGroups = [
@@ -24,7 +23,7 @@ const navGroups = [
 
 export default function AdminOverviewPage() {
   return (
-    <AppShell navGroups={navGroups} brand={{ name: 'Itsi Business', badge: 'Admin' }}>
+    <AppShell navGroups={navGroups} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
       <div className="p-8">
         <PageHeader
           title="Platform Overview"

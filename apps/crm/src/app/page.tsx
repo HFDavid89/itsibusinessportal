@@ -49,7 +49,7 @@ export default function CrmDashboardPage() {
   const recent = [...accounts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'CRM' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'CRM' }} workspace="crm">
       <div className="max-w-[1200px] mx-auto p-6 space-y-6">
 
         {/* Header */}

@@ -9,6 +9,8 @@ import {
   type BusinessAccount,
   type BusinessContact,
   type BusinessSite,
+  type BusinessInvoice,
+  type BusinessService,
   type TimelineEvent,
   type CreateContactInput,
   type CreateSiteInput,
@@ -33,7 +35,7 @@ const STATUS_COLOURS: Record<string, string> = {
 
 const INP = 'w-full px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30';
 
-type TabId = 'overview' | 'contacts' | 'sites' | 'timeline';
+type TabId = 'overview' | 'contacts' | 'sites' | 'invoices' | 'services' | 'timeline';
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -270,6 +272,128 @@ function SitesPanel({ accountId }: { accountId: string }) {
   );
 }
 
+// ── Invoices Panel ────────────────────────────────────────────────────────────
+
+const INV_STATUS_COLOURS: Record<string, string> = {
+  DRAFT:     'bg-border/60 text-muted border-border',
+  ISSUED:    'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  PART_PAID: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  PAID:      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  OVERDUE:   'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  VOID:      'bg-border/40 text-muted/60 border-border/40',
+};
+
+function fmt(pence: number) { return `£${(pence / 100).toFixed(2)}`; }
+
+function InvoicesPanel({ accountId }: { accountId: string }) {
+  const [invoices, setInvoices] = useState<BusinessInvoice[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
+
+  useEffect(() => {
+    crmApi.accountInvoices(accountId)
+      .then((r) => setInvoices(r.data))
+      .catch(() => setError('Failed to load invoices'))
+      .finally(() => setLoading(false));
+  }, [accountId]);
+
+  return (
+    <div className="space-y-3">
+      {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">{error}</div>}
+      {loading ? (
+        <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-surface-raised rounded-xl animate-pulse" />)}</div>
+      ) : invoices.length === 0 ? (
+        <div className="text-center py-10 text-sm text-muted">No invoices for this account.</div>
+      ) : (
+        <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
+          {invoices.map((inv) => (
+            <div key={inv.id} className="px-4 py-3 bg-surface flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground font-mono">{inv.invoiceNumber}</p>
+                <p className="text-[11px] text-muted">
+                  {new Date(inv.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {inv.dueDate && ` · Due ${new Date(inv.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-sm font-bold text-foreground">{fmt(inv.totalPence)}</span>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${INV_STATUS_COLOURS[inv.status] ?? 'bg-border text-muted border-border'}`}>
+                  {inv.status.replace('_', ' ')}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Services Panel ────────────────────────────────────────────────────────────
+
+const SVC_STATUS_COLOURS: Record<string, string> = {
+  DRAFT:     'bg-border/60 text-muted border-border',
+  REQUESTED: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  ACTIVE:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  SUSPENDED: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  CEASED:    'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  CANCELLED: 'bg-border/40 text-muted/60 border-border/40',
+};
+
+const SVC_TYPE_ICON: Record<string, string> = {
+  MOBILE:    '📱',
+  BROADBAND: '🌐',
+  ENERGY:    '⚡',
+};
+
+function ServicesPanel({ accountId }: { accountId: string }) {
+  const [services, setServices] = useState<BusinessService[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
+
+  useEffect(() => {
+    crmApi.accountServices(accountId)
+      .then((r) => setServices(r.data))
+      .catch(() => setError('Failed to load services'))
+      .finally(() => setLoading(false));
+  }, [accountId]);
+
+  return (
+    <div className="space-y-3">
+      {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">{error}</div>}
+      {loading ? (
+        <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-surface-raised rounded-xl animate-pulse" />)}</div>
+      ) : services.length === 0 ? (
+        <div className="text-center py-10 text-sm text-muted">No services for this account.</div>
+      ) : (
+        <div className="divide-y divide-border/60 border border-border rounded-xl overflow-hidden">
+          {services.map((svc) => (
+            <div key={svc.id} className="px-4 py-3 bg-surface">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-base mt-0.5">{SVC_TYPE_ICON[svc._serviceType] ?? '🔌'}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{svc.displayName}</p>
+                    <p className="text-[11px] text-muted">
+                      {svc._serviceType}
+                      {svc.mobileNumber && ` · ${svc.mobileNumber}`}
+                      {svc.site && ` · ${svc.site.name}`}
+                      {svc.retailPricePence > 0 && ` · ${fmt(svc.retailPricePence)}/mo`}
+                    </p>
+                  </div>
+                </div>
+                <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full border font-medium ${SVC_STATUS_COLOURS[svc.status] ?? 'bg-border text-muted border-border'}`}>
+                  {svc.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Timeline Panel ────────────────────────────────────────────────────────────
 
 const EVENT_LABELS: Record<string, string> = {
@@ -342,14 +466,16 @@ export default function AccountDetailPage() {
   }, [id]);
 
   const TABS: { id: TabId; label: string; count?: number }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'contacts', label: 'Contacts', count: account?._count?.contacts },
-    { id: 'sites', label: 'Sites', count: account?._count?.sites },
-    { id: 'timeline', label: 'Timeline' },
+    { id: 'overview',  label: 'Overview' },
+    { id: 'contacts',  label: 'Contacts',  count: account?._count?.contacts },
+    { id: 'sites',     label: 'Sites',     count: account?._count?.sites },
+    { id: 'invoices',  label: 'Invoices',  count: account?._count?.invoices },
+    { id: 'services',  label: 'Services' },
+    { id: 'timeline',  label: 'Timeline' },
   ];
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'CRM' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'CRM' }} workspace="crm">
       <div className="flex flex-col min-h-0 h-full">
 
         {/* Account header */}
@@ -446,7 +572,9 @@ export default function AccountDetailPage() {
             )}
 
             {tab === 'contacts' && <ContactsPanel accountId={id} />}
-            {tab === 'sites' && <SitesPanel accountId={id} />}
+            {tab === 'sites'    && <SitesPanel accountId={id} />}
+            {tab === 'invoices' && <InvoicesPanel accountId={id} />}
+            {tab === 'services' && <ServicesPanel accountId={id} />}
             {tab === 'timeline' && <TimelinePanel accountId={id} />}
           </div>
         )}

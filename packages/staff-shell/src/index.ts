@@ -10,3 +10,5 @@ export * from './settings-cog';
 export * from './settings-placeholder';
 export * from './staff-page-chrome';
 export * from './use-workspace-badges';
+export * from './login-page';
+export * from './use-require-auth';

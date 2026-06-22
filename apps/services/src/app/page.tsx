@@ -86,7 +86,7 @@ export default function ServicesHome() {
   const energyCount     = recentServices.filter((s) => s._serviceType === 'ENERGY').length;
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-5 max-w-6xl mx-auto space-y-6">
 
         {/* Header */}

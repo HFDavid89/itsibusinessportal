@@ -43,7 +43,7 @@ export default function NewInvoicePage() {
   }
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }} workspace="billing">
       <div className="p-5 max-w-xl mx-auto">
         <div className="mb-5">
           <h1 className="text-lg font-bold text-foreground">New Invoice</h1>

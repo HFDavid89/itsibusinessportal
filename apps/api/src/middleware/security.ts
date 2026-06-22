@@ -8,16 +8,30 @@ import type { FastifyInstance } from 'fastify';
  */
 
 const ALLOWED_ORIGINS_DEV = [
-  'http://localhost:4005', // admin
-  'http://localhost:4006', // crm
-  'http://localhost:4007', // billing
-  'http://localhost:4008', // desk
-  'http://localhost:4009', // portal
+  'http://localhost:17005', // admin
+  'http://localhost:17006', // crm
+  'http://localhost:17007', // billing
+  'http://localhost:17008', // desk
+  'http://localhost:17009', // portal
+  'http://localhost:17010', // services
 ];
 
 const ALLOWED_ORIGINS_PROD_PATTERN = /^https:\/\/([a-z0-9-]+\.)?itsi\.business$/;
 
+function getAllowedOrigins(): string[] {
+  const env = process.env.CORS_ALLOWED_ORIGINS;
+  if (env) return env.split(',').map((s) => s.trim()).filter(Boolean);
+  return ALLOWED_ORIGINS_DEV;
+}
+
 export async function registerSecurity(app: FastifyInstance): Promise<void> {
+  const allowedOrigins = getAllowedOrigins();
+
+  // ── Cookies ───────────────────────────────────────────────────────────────
+  await app.register(import('@fastify/cookie'), {
+    secret: process.env.COOKIE_SECRET ?? 'itsi-business-dev-cookie-secret',
+  });
+
   // ── CORS ────────────────────────────────────────────────────────────────────
   await app.register(import('@fastify/cors'), {
     origin: (origin, cb) => {
@@ -26,7 +40,7 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
       if (isProd) {
         cb(null, ALLOWED_ORIGINS_PROD_PATTERN.test(origin));
       } else {
-        cb(null, ALLOWED_ORIGINS_DEV.includes(origin));
+        cb(null, allowedOrigins.includes(origin));
       }
     },
     credentials: true,

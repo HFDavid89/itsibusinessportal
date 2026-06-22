@@ -65,7 +65,7 @@ export default function BillingDashboardPage() {
   ];
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }} workspace="billing">
       <div className="p-5 space-y-5 max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>

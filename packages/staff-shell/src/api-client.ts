@@ -106,23 +106,6 @@ export async function apiFetchBlob(path: string): Promise<Blob> {
 }
 
 async function tryRefreshToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (refreshToken) {
-    try {
-      const payload = JSON.parse(atob(refreshToken.split('.')[1]));
-      const endpoint = payload.realm === 'platform' ? '/auth/platform/refresh' : '/auth/staff/refresh';
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.data?.accessToken) { setTokens(json.data.accessToken); return true; }
-      }
-    } catch { /* fall through to cookie SSO */ }
-  }
   const user = await bootstrapSession();
   return !!user;
 }
@@ -140,18 +123,17 @@ export interface AuthUser {
 
 export async function bootstrapSession(): Promise<AuthUser | null> {
   try {
-    const res = await fetch(`${API_URL}/auth/session`, { credentials: 'include' });
+    const res = await fetch(`${API_URL}/api/v1/auth/me`, { credentials: 'include' });
     if (!res.ok) return null;
     const json = await res.json();
-    if (!json?.data?.accessToken) return null;
-    setTokens(json.data.accessToken);
-    const u = json.data.user ?? {};
+    const u = json?.data;
+    if (!u) return null;
     return {
       id: u.id,
       email: u.email,
       firstName: u.firstName ?? '',
       lastName: u.lastName ?? '',
-      roles: u.roles ?? (u.role ? [u.role] : []),
+      roles: u.roles ?? [],
       realm: u.realm ?? 'staff',
     };
   } catch {
@@ -160,54 +142,33 @@ export async function bootstrapSession(): Promise<AuthUser | null> {
 }
 
 export async function login(email: string, password: string) {
-  const platformRes = await fetch(`${API_URL}/auth/platform/login`, {
+  const res = await fetch(`${API_URL}/api/v1/auth/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
 
-  let json: any;
-  if (platformRes.ok) {
-    json = await platformRes.json();
-  } else {
-    const staffRes = await fetch(`${API_URL}/auth/staff/login`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    json = await staffRes.json();
-    if (!staffRes.ok) throw new ApiError(staffRes.status, json?.error?.code, json?.error?.message ?? 'Login failed');
-  }
+  const json = await res.json();
+  if (!res.ok) throw new ApiError(res.status, json?.error?.code ?? 'AUTH_ERROR', json?.error?.message ?? 'Login failed');
 
-  setTokens(json.data.accessToken, json.data.refreshToken);
-  const payload = JSON.parse(atob(json.data.accessToken.split('.')[1]));
-  const realm = (payload.realm ?? 'staff') as 'platform' | 'staff';
+  const { token, user: u } = json.data;
+  setTokens(token);
 
   const authUser: AuthUser = {
-    id: json.data.user.id,
-    email: json.data.user.email,
-    firstName: json.data.user.firstName ?? '',
-    lastName: json.data.user.lastName ?? '',
-    roles: payload.roles ?? (payload.role ? [payload.role] : []),
-    realm,
+    id: u.id,
+    email: u.email,
+    firstName: u.firstName ?? '',
+    lastName: u.lastName ?? '',
+    roles: u.roles ?? [],
+    realm: (u.realm ?? 'staff') as 'platform' | 'staff',
   };
-  return { accessToken: json.data.accessToken, refreshToken: json.data.refreshToken, user: authUser };
+  return { accessToken: token, user: authUser };
 }
 
 export async function logout() {
   try {
-    const token = getAccessToken();
-    const endpoint = token
-      ? (() => {
-          try {
-            const p = JSON.parse(atob(token.split('.')[1]));
-            return p.realm === 'platform' ? '/auth/platform/logout' : '/auth/staff/logout';
-          } catch { return '/auth/staff/logout'; }
-        })()
-      : '/auth/staff/logout';
-    await apiFetch(endpoint, { method: 'POST' });
+    await apiFetch('/api/v1/auth/logout', { method: 'POST' });
   } finally {
     clearTokens();
   }

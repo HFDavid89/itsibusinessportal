@@ -288,12 +288,12 @@ export default function InvoiceDetailPage() {
   }
 
   if (loading) return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }} workspace="billing">
       <div className="p-8 text-sm text-muted">Loading invoice…</div>
     </AppShell>
   );
   if (error || !invoice) return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }} workspace="billing">
       <div className="p-8 space-y-3">
         <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{error || 'Invoice not found'}</div>
         <Link href="/invoices" className="text-xs text-accent hover:underline">← Back to invoices</Link>
@@ -311,7 +311,7 @@ export default function InvoiceDetailPage() {
   const payments   = invoice.payments ?? [];
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }} workspace="billing">
       <div className="p-5 max-w-5xl mx-auto space-y-5">
 
         {/* Header */}

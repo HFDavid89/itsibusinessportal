@@ -101,19 +101,19 @@ export default function CatalogueItemPage() {
   }
 
   if (loading) return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-8 text-sm text-muted">Loading…</div>
     </AppShell>
   );
 
   if (error || !item) return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-8 text-sm text-danger">{error || 'Not found'}</div>
     </AppShell>
   );
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
       <div className="p-5 max-w-3xl mx-auto space-y-4">
 
         <div className="flex items-center gap-2 text-xs text-muted">

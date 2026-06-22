@@ -56,6 +56,47 @@ export interface BusinessSite {
   _count?: { contacts: number };
 }
 
+export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PART_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
+
+export interface BusinessInvoice {
+  id: string;
+  invoiceNumber: string;
+  accountId: string;
+  status: InvoiceStatus;
+  dueDate?: string | null;
+  issuedAt?: string | null;
+  subtotalPence: number;
+  taxTotalPence: number;
+  totalPence: number;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { lines: number; payments: number };
+}
+
+export type ServiceStatus = 'DRAFT' | 'REQUESTED' | 'ACTIVE' | 'SUSPENDED' | 'CEASED' | 'CANCELLED';
+export type ServiceType = 'MOBILE' | 'BROADBAND' | 'ENERGY';
+
+export interface BusinessService {
+  id: string;
+  _serviceType: ServiceType;
+  accountId: string;
+  displayName: string;
+  status: ServiceStatus;
+  retailPricePence: number;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  mobileNumber?: string | null;
+  simLabel?: string | null;
+  postcode?: string | null;
+  accessTechnology?: string | null;
+  fuelType?: string | null;
+  site?: { id: string; name: string; postcode: string } | null;
+  catalogueItem?: { id: string; name: string; sku: string; serviceType: string } | null;
+}
+
 export interface TimelineEvent {
   id: string;
   type: string;
@@ -190,6 +231,23 @@ export const crmApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  // Invoices for account
+  accountInvoices: (accountId: string, params?: { page?: number; limit?: number }) => {
+    const q = new URLSearchParams({ accountId });
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    return apiFetch<ApiResponse<BusinessInvoice[]>>(`/api/v1/invoices?${q.toString()}`);
+  },
+
+  // Services for account
+  accountServices: (accountId: string, params?: { type?: ServiceType; page?: number; limit?: number }) => {
+    const q = new URLSearchParams({ accountId });
+    if (params?.type) q.set('type', params.type);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    return apiFetch<ApiResponse<BusinessService[]>>(`/api/v1/services?${q.toString()}`);
+  },
 
   // Timeline
   timeline: (accountId: string, params?: { page?: number; limit?: number }) => {

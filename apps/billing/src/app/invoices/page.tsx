@@ -109,7 +109,7 @@ function InvoicesPageInner() {
   const pages = Math.ceil(total / LIMIT);
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }}>
+    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Billing' }} workspace="billing">
       <div className="p-5 max-w-6xl mx-auto space-y-4">
 
         {/* Header */}
