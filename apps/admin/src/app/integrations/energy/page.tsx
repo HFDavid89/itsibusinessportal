@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell, ADMIN_NAV_GROUPS } from '@itsi-business/staff-shell';
-import { PageHeader, Card, Badge } from '@itsi-business/ui';
+import { AppShell, ADMIN_NAV_GROUPS, StaffPageHeader, StaffPageContent } from '@itsi-business/staff-shell';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:17001';
 
@@ -44,15 +43,15 @@ export default function EnergyIntegrationPage() {
 
   return (
     <AppShell navGroups={ADMIN_NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
-      <div className="p-8 max-w-2xl">
-        <PageHeader
+      <StaffPageContent className="max-w-2xl">
+        <StaffPageHeader
           title="Energy Integration"
-          subtitle="Fidelity Energy integration readiness — separate from Itsi Mobile wholesale"
+          description="Fidelity Energy integration readiness — separate from Itsi Mobile wholesale"
         />
 
-        <Card className="mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-1">Fidelity Energy</h2>
-          <p className="text-sm text-gray-500 mb-4">
+        <div className="command-card mb-6">
+          <h2 className="text-base font-semibold text-foreground mb-1">Fidelity Energy</h2>
+          <p className="text-sm text-muted mb-4">
             Mobile and broadband fulfilment uses the Itsi Mobile wholesale bridge.
             Energy sales and contracts are completed manually in the Fidelity portal.
             Itsi Business tracks energy customer relationships, renewals, and check-ins only.
@@ -63,64 +62,73 @@ export default function EnergyIntegrationPage() {
             <button
               onClick={loadStatus}
               disabled={state === 'loading'}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {state === 'loading' ? 'Loading…' : 'Check Integration Status'}
             </button>
             {status && (
-              <Badge variant={status.enabled && status.configured ? 'default' : 'default'}>
-                {status.statusLabel}
-              </Badge>
+              <span className="status-pill status-pill-info">{status.statusLabel}</span>
             )}
           </div>
-        </Card>
+        </div>
 
         {status && (
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Status</h3>
+          <div className="command-card mb-6">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Status</h3>
             <dl className="space-y-2 text-sm">
               <Row label="Provider">{status.provider}</Row>
               <Row label="Enabled">
-                <Badge variant={status.enabled ? 'success' : 'default'}>{status.enabled ? 'Yes' : 'No'}</Badge>
+                <StatusPill variant={status.enabled ? 'success' : 'info'}>{status.enabled ? 'Yes' : 'No'}</StatusPill>
               </Row>
               <Row label="Configured">
-                <Badge variant={status.configured ? 'success' : 'default'}>{status.configured ? 'Yes' : 'No'}</Badge>
+                <StatusPill variant={status.configured ? 'success' : 'info'}>{status.configured ? 'Yes' : 'No'}</StatusPill>
               </Row>
               <Row label="Readiness">{status.readiness}</Row>
               <Row label="Live integration">
-                <Badge variant="default">{status.liveIntegrationAvailable ? 'Available' : 'Not available'}</Badge>
+                <StatusPill variant="info">{status.liveIntegrationAvailable ? 'Available' : 'Not available'}</StatusPill>
               </Row>
               <Row label="Message">{status.message}</Row>
             </dl>
-          </Card>
+          </div>
         )}
 
         {errorMsg && (
-          <Card className="border-red-200 bg-red-50 mt-4">
-            <p className="text-sm font-semibold text-red-700 mb-1">Failed to load status</p>
-            <p className="text-sm text-red-600 font-mono">{errorMsg}</p>
-          </Card>
+          <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 mb-6">
+            <p className="text-sm font-semibold text-danger mb-1">Failed to load status</p>
+            <p className="text-sm text-danger/90 font-mono">{errorMsg}</p>
+          </div>
         )}
 
-        <div className="mt-8 p-3 bg-gray-50 rounded border border-gray-200 space-y-2">
-          <p className="text-xs text-gray-500 font-mono">
+        <div className="rounded-xl border border-border bg-surface-raised px-4 py-3 space-y-2">
+          <p className="text-xs text-muted font-mono">
             RULE: Fidelity Energy must NOT be placed inside the Itsi Mobile wholesale client.
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted">
             Environment placeholders: FIDELITY_ENERGY_ENABLED, FIDELITY_ENERGY_API_BASE_URL, FIDELITY_ENERGY_API_KEY.
             See docs/FIDELITY_ENERGY_INTEGRATION_DISCOVERY.md for what to request from Fidelity.
           </p>
         </div>
-      </div>
+      </StaffPageContent>
     </AppShell>
   );
+}
+
+function StatusPill({
+  children,
+  variant,
+}: {
+  children: React.ReactNode;
+  variant: 'success' | 'info';
+}) {
+  const classes = variant === 'success' ? 'status-pill-success' : 'status-pill-info';
+  return <span className={`status-pill ${classes}`}>{children}</span>;
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-36 text-gray-500 shrink-0">{label}</dt>
-      <dd className="text-gray-900">{children}</dd>
+      <dt className="w-36 text-muted shrink-0">{label}</dt>
+      <dd className="text-foreground">{children}</dd>
     </div>
   );
 }

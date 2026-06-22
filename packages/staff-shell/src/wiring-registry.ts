@@ -56,11 +56,6 @@ export const ADMIN_WIRING: WorkspaceWiring = {
     { label: 'Staff', href: '/staff', icon: '👤', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'admin.staff.manage' },
     { label: 'Wholesale Connection', href: '/wholesale', icon: '🔗', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'wholesale.read' },
     { label: 'Energy Integration', href: '/integrations/energy', icon: '⚡', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'wholesale.read', comingSoonReason: 'Fidelity Energy live integration awaiting API documentation.' },
-    { label: 'CRM', href: WORKSPACE_URLS.crm, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
-    { label: 'Billing', href: WORKSPACE_URLS.billing, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
-    { label: 'Desk', href: WORKSPACE_URLS.desk, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
-    { label: 'Services', href: WORKSPACE_URLS.services, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
-    { label: 'Portal', href: WORKSPACE_URLS.portal, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
   ],
   quickActions: [
     { label: 'Manage Staff', href: '/staff', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'admin.staff.manage' },

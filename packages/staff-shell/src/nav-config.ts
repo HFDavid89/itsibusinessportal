@@ -3,8 +3,8 @@
  * Staff apps import these instead of duplicating NAV_GROUPS per page.
  */
 import type { NavGroupDef } from './app-shell';
-import { WORKSPACE_URLS } from './workspace-urls';
 
+/** In-app admin tabs only — cross-workspace links live in the left sidebar (PLATFORM_NAV). */
 export const ADMIN_NAV_GROUPS: NavGroupDef[] = [
   {
     label: 'Admin',
@@ -14,16 +14,6 @@ export const ADMIN_NAV_GROUPS: NavGroupDef[] = [
       { href: '/staff', label: 'Staff' },
       { href: '/wholesale', label: 'Wholesale Connection' },
       { href: '/integrations/energy', label: 'Energy Integration' },
-    ],
-  },
-  {
-    label: 'Workspaces',
-    items: [
-      { href: WORKSPACE_URLS.crm, label: 'CRM', external: true },
-      { href: WORKSPACE_URLS.billing, label: 'Billing', external: true },
-      { href: WORKSPACE_URLS.desk, label: 'Desk', external: true },
-      { href: WORKSPACE_URLS.services, label: 'Services', external: true },
-      { href: WORKSPACE_URLS.portal, label: 'Portal', external: true },
     ],
   },
 ];

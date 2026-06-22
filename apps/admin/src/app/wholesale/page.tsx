@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell, ADMIN_NAV_GROUPS } from '@itsi-business/staff-shell';
-import { PageHeader, Card, Badge } from '@itsi-business/ui';
+import { AppShell, ADMIN_NAV_GROUPS, StaffPageHeader, StaffPageContent } from '@itsi-business/staff-shell';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:17001';
 
@@ -53,15 +52,15 @@ export default function WholesaleConnectionPage() {
 
   return (
     <AppShell navGroups={ADMIN_NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
-      <div className="p-8 max-w-2xl">
-        <PageHeader
+      <StaffPageContent className="max-w-2xl">
+        <StaffPageHeader
           title="Wholesale Connection"
-          subtitle="Test connectivity to the Itsi Mobile wholesale API bridge"
+          description="Test connectivity to the Itsi Mobile wholesale API bridge"
         />
 
-        <Card className="mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-1">Itsi Mobile Wholesale API</h2>
-          <p className="text-sm text-gray-500 mb-4">
+        <div className="command-card mb-6">
+          <h2 className="text-base font-semibold text-foreground mb-1">Itsi Mobile Wholesale API</h2>
+          <p className="text-sm text-muted mb-4">
             Itsi Business connects to Itsi Mobile for availability checks, quotes, and service orders.
             Itsi Mobile handles all provider interactions (Gamma, KCOM, MS3, OTS Hero).
             Itsi Business never calls provider APIs directly.
@@ -71,7 +70,7 @@ export default function WholesaleConnectionPage() {
             <button
               onClick={runTest}
               disabled={status === 'loading'}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 rounded-xl bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {status === 'loading' ? 'Testing…' : 'Test Connection'}
             </button>
@@ -80,23 +79,23 @@ export default function WholesaleConnectionPage() {
               <StatusBadge status={status} />
             )}
           </div>
-        </Card>
+        </div>
 
         {result && (
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Result</h3>
+          <div className="command-card mb-6">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Result</h3>
             <dl className="space-y-2 text-sm">
               <Row label="Enabled">
-                <Badge variant={result.enabled ? 'success' : 'default'}>
+                <StatusPill variant={result.enabled ? 'success' : 'info'}>
                   {result.enabled ? 'Yes' : 'No'}
-                </Badge>
+                </StatusPill>
               </Row>
               {result.enabled && (
                 <>
                   <Row label="Reachable">
-                    <Badge variant={result.ok ? 'success' : 'error'}>
+                    <StatusPill variant={result.ok ? 'success' : 'danger'}>
                       {result.ok ? 'Yes' : 'No'}
-                    </Badge>
+                    </StatusPill>
                   </Row>
                   {result.latencyMs !== undefined && (
                     <Row label="Latency">{result.latencyMs} ms</Row>
@@ -110,42 +109,58 @@ export default function WholesaleConnectionPage() {
                 </>
               )}
             </dl>
-          </Card>
+          </div>
         )}
 
         {errorMsg && (
-          <Card className="border-red-200 bg-red-50">
-            <p className="text-sm font-semibold text-red-700 mb-1">Connection failed</p>
-            <p className="text-sm text-red-600 font-mono">{errorMsg}</p>
-            <p className="text-xs text-red-400 mt-2">
+          <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 mb-6">
+            <p className="text-sm font-semibold text-danger mb-1">Connection failed</p>
+            <p className="text-sm text-danger/90 font-mono">{errorMsg}</p>
+            <p className="text-xs text-muted mt-2">
               Check ITSI_MOBILE_WHOLESALE_ENABLED, ITSI_MOBILE_API_BASE_URL and ITSI_MOBILE_WHOLESALE_API_KEY in your .env.
             </p>
-          </Card>
+          </div>
         )}
 
-        <div className="mt-8 p-3 bg-gray-50 rounded border border-gray-200">
-          <p className="text-xs text-gray-500 font-mono">
+        <div className="rounded-xl border border-border bg-surface-raised px-4 py-3">
+          <p className="text-xs text-muted font-mono">
             RULE: Itsi Business may call Itsi Mobile wholesale APIs.
             Itsi Business must NOT call Gamma, KCOM, MS3, OTS Hero, or provider APIs directly.
           </p>
         </div>
-      </div>
+      </StaffPageContent>
     </AppShell>
   );
 }
 
 function StatusBadge({ status }: { status: TestStatus }) {
-  if (status === 'ok')       return <Badge variant="success">Connected</Badge>;
-  if (status === 'disabled') return <Badge variant="default">Disabled</Badge>;
-  if (status === 'error')    return <Badge variant="error">Failed</Badge>;
+  if (status === 'ok')       return <StatusPill variant="success">Connected</StatusPill>;
+  if (status === 'disabled') return <StatusPill variant="info">Disabled</StatusPill>;
+  if (status === 'error')    return <StatusPill variant="danger">Failed</StatusPill>;
   return null;
+}
+
+function StatusPill({
+  children,
+  variant,
+}: {
+  children: React.ReactNode;
+  variant: 'success' | 'info' | 'danger' | 'warning';
+}) {
+  const classes = {
+    success: 'status-pill-success',
+    info: 'status-pill-info',
+    danger: 'status-pill-danger',
+    warning: 'status-pill-warning',
+  }[variant];
+  return <span className={`status-pill ${classes}`}>{children}</span>;
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-32 text-gray-500 shrink-0">{label}</dt>
-      <dd className="text-gray-900">{children}</dd>
+      <dt className="w-32 text-muted shrink-0">{label}</dt>
+      <dd className="text-foreground">{children}</dd>
     </div>
   );
 }
