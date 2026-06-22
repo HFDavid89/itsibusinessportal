@@ -13,6 +13,7 @@ export const ADMIN_NAV_GROUPS: NavGroupDef[] = [
       { href: '/settings', label: 'Settings' },
       { href: '/staff', label: 'Staff' },
       { href: '/wholesale', label: 'Wholesale Connection' },
+      { href: '/integrations/energy', label: 'Energy Integration' },
     ],
   },
   {

@@ -26,7 +26,7 @@ function ServiceTable({ title, items }: { title: string; items: PortalServiceIte
               <tr key={s.id} style={{ borderTop: '1px solid rgb(var(--border))' }}>
                 <td style={{ padding: '0.5rem 0' }}>{s.displayName}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{s.serviceReference}</td>
-                <td><StatusPill tone={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status}</StatusPill></td>
+                <td><StatusPill tone={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.statusLabel ?? s.status}</StatusPill></td>
                 <td>{s.site?.name ?? '—'}</td>
                 <td>{s.retailPricePence != null ? fmtPence(s.retailPricePence) : s.retailPriceDescription ?? '—'}</td>
               </tr>
@@ -59,6 +59,11 @@ export default function ServicesPage() {
             <ServiceTable title="Mobile" items={services.mobile} />
             <ServiceTable title="Broadband" items={services.broadband} />
             <ServiceTable title="Energy" items={services.energy} />
+            {services.energy.length > 0 && (
+              <p style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))', marginTop: '-0.5rem' }}>
+                Energy quote and order support via Fidelity Energy is coming soon. Contact your account manager for assistance.
+              </p>
+            )}
           </>
         )}
       </div>

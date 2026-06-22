@@ -284,6 +284,9 @@ importers:
 
   apps/portal:
     dependencies:
+      '@itsi-business/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@itsi-business/staff-shell':
         specifier: workspace:^
         version: link:../../packages/staff-shell
@@ -327,6 +330,9 @@ importers:
 
   apps/services:
     dependencies:
+      '@itsi-business/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@itsi-business/staff-shell':
         specifier: workspace:*
         version: link:../../packages/staff-shell

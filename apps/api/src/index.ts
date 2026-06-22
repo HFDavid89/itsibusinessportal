@@ -20,6 +20,7 @@ import { invoiceRoutes } from './routes/invoices';
 import { catalogueRoutes } from './routes/catalogue';
 import { serviceRoutes } from './routes/services';
 import { wholesaleRoutes } from './routes/wholesale';
+import { energyIntegrationRoutes } from './routes/energy-integrations';
 import { staffUserRoutes } from './routes/staff-users';
 import { statsRoutes } from './routes/stats';
 import { portalRoutes } from './routes/portal';
@@ -42,6 +43,7 @@ async function start() {
   await app.register(catalogueRoutes, { prefix: '/api/v1/services/catalogue' });
   await app.register(serviceRoutes,   { prefix: '/api/v1/services' });
   await app.register(wholesaleRoutes,  { prefix: '/api/v1/wholesale' });
+  await app.register(energyIntegrationRoutes, { prefix: '/api/v1/energy-integrations' });
   await app.register(staffUserRoutes,  { prefix: '/api/v1/admin/staff' });
   await app.register(statsRoutes,      { prefix: '/api/v1/stats' });
   await app.register(portalRoutes,     { prefix: '/api/v1/portal' });

@@ -10,7 +10,7 @@ import {
   assertPortalUserOwnedByAccount,
   sanitizeTicketForPortal,
 } from './helpers';
-import { CUSTOMER_INVOICE_STATUSES, OPEN_TICKET_STATUSES, balanceDuePence } from './constants';
+import { CUSTOMER_INVOICE_STATUSES, OPEN_TICKET_STATUSES, balanceDuePence, toPortalStatusLabel } from './constants';
 
 const VALID_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 const VALID_CATEGORIES = ['GENERAL', 'BILLING', 'MOBILE', 'BROADBAND', 'ENERGY', 'SOFTWARE', 'ACCOUNT'] as const;
@@ -276,9 +276,9 @@ export async function portalRoutes(app: FastifyInstance) {
     return reply.send({
       success: true,
       data: {
-        mobile: mobile.map((s) => ({ ...s, type: 'MOBILE' as const })),
-        broadband: broadband.map((s) => ({ ...s, type: 'BROADBAND' as const })),
-        energy: energy.map((s) => ({ ...s, type: 'ENERGY' as const })),
+        mobile: mobile.map((s) => ({ ...s, type: 'MOBILE' as const, statusLabel: toPortalStatusLabel(s.status) })),
+        broadband: broadband.map((s) => ({ ...s, type: 'BROADBAND' as const, statusLabel: toPortalStatusLabel(s.status) })),
+        energy: energy.map((s) => ({ ...s, type: 'ENERGY' as const, statusLabel: toPortalStatusLabel(s.status) })),
       },
     });
   });
@@ -522,7 +522,10 @@ export async function portalRoutes(app: FastifyInstance) {
       take: 200,
     });
 
-    return reply.send({ success: true, data: sims });
+    return reply.send({
+      success: true,
+      data: sims.map((s) => ({ ...s, statusLabel: toPortalStatusLabel(s.status) })),
+    });
   });
 
   // ── GET /api/v1/portal/users ──────────────────────────────────────────────

@@ -276,6 +276,21 @@
 | Validation / error handling | **Reuse** | Zod body schema, lifecycle guards, `handleWholesaleOrderError()` mapping | Provider-specific error codes |
 | Retry / circuit-breaker UI | **Refocus** | Disabled buttons + API error codes (`WHOLESALE_DISABLED`, `CIRCUIT_OPEN`, `WHOLESALE_CONFIG_ERROR`) | Provider retry logic |
 | Confirmation modal | **Reuse** | `confirm: true` required — same explicit-submit pattern | Consumer self-order |
-| Energy wholesale | **Skip (deferred)** | Disabled panel in UI | Phase 11+ |
+| Energy wholesale | **Skip (hard excluded)** | Fidelity Energy — separate integration, not Itsi Mobile | Hard excluded |
 | Portal wholesale actions | **Skip (hard excluded)** | No portal routes or buttons | Hard excluded |
 | Auto retail+wholesale create | **Skip (hard excluded)** | Two-step: retail record first, then staff request | Hard excluded |
+
+---
+
+## Phase 11 — Lifecycle hardening and energy boundary reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Service status labels (portal) | **Refocus** | `packages/core/src/service-lifecycle.ts` — customer-safe labels | Raw upstream / wholesale diagnostics |
+| Status timeline metadata | **Refocus** | `writeServiceLifecycleEvent()` with `source`, `previousStatus`, `newStatus` | Provider-internal events |
+| Wholesale status mapper | **Refocus** | Staff warnings for FAILED/REJECTED/CANCELLED; no auto-cease retail | Auto lifecycle destruction |
+| Wholesale refresh UI | **Refocus** | `wholesaleInsights`, suggested actions, safe error messages | Raw provider refs |
+| Energy fulfilment | **Skip (hard excluded)** | Fidelity Energy client — **not** Itsi Mobile wholesale | Itsi Mobile energy ordering |
+| Fidelity Energy integration | **New (Phase 11)** | Placeholder client + admin readiness page | Live API until Phase 12A |
+| Portal service status | **Refocus** | `statusLabel` from portal API | Internal enum strings |
+| Portal energy self-order | **Skip (deferred)** | Coming soon message only | Phase 12A/12B |

@@ -1,4 +1,7 @@
 import { apiFetch } from '@itsi-business/staff-shell';
+import { toPortalStatusLabel } from '@itsi-business/core';
+
+export { toPortalStatusLabel };
 
 type ApiEnvelope<T> = { success: boolean; data: T; meta?: { total: number; page: number; limit: number } };
 
@@ -116,6 +119,7 @@ export interface PortalServiceItem {
   serviceReference: string;
   displayName: string;
   status: string;
+  statusLabel?: string;
   type: 'MOBILE' | 'BROADBAND' | 'ENERGY';
   retailPricePence?: number;
   mobileNumber?: string | null;
@@ -134,6 +138,7 @@ export interface PortalFleetItem {
   serviceReference: string;
   displayName: string;
   status: string;
+  statusLabel?: string;
   mobileNumber: string | null;
   simLabel: string | null;
   costCentre: string | null;

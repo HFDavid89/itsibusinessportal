@@ -2,6 +2,10 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@itsi-business/database';
 import {
+  BLOCKED_WHOLESALE_ORDER_STATUSES,
+  ORDERABLE_WHOLESALE_STATUSES,
+} from '@itsi-business/core';
+import {
   itsiMobileClient,
   loadWholesaleConfig,
   isWholesaleEnabled,
@@ -12,7 +16,15 @@ import {
   WholesaleTimeoutError,
   type WholesaleOrderPayload,
 } from './itsi-mobile-client';
-import { mapWholesaleLinkStatus, shouldPromoteRetailToActive, sanitizeStatusResponse } from './status-mapper';
+import {
+  mapWholesaleLinkStatus,
+  shouldPromoteRetailToActive,
+  sanitizeStatusResponse,
+  buildWholesaleStaffInsights,
+  extractUpstreamStatusFromResponse,
+  isUpstreamFailureStatus,
+} from './status-mapper';
+import { writeServiceLifecycleEvent } from '../service-lifecycle-events';
 
 export const RequestWholesaleOrderSchema = z.object({
   quoteId:      z.string().max(200).optional(),
@@ -22,9 +34,6 @@ export const RequestWholesaleOrderSchema = z.object({
   notes:        z.string().max(2000).optional(),
   confirm:      z.literal(true, { errorMap: () => ({ message: 'confirm must be true' }) }),
 });
-
-const ORDERABLE_STATUSES = new Set(['DRAFT', 'REQUESTED']);
-const BLOCKED_STATUSES = new Set(['CEASED', 'CANCELLED', 'SUSPENDED']);
 
 const CATALOGUE_SELECT = {
   id: true, sku: true, name: true, serviceType: true, contractTermMonths: true,
@@ -36,26 +45,52 @@ const SERVICE_INCLUDE = {
   wholesaleLink: true,
 } as const;
 
+const SAFE_WHOLESALE_ERROR_MESSAGES: Record<string, string> = {
+  WHOLESALE_CONFIG_ERROR: 'Wholesale integration is misconfigured. Contact platform admin.',
+  WHOLESALE_DISABLED: 'Wholesale API is disabled. Enable ITSI_MOBILE_WHOLESALE_ENABLED to request orders.',
+  CIRCUIT_OPEN: 'Wholesale API is temporarily unavailable after repeated failures. Try again shortly.',
+  WHOLESALE_TIMEOUT: 'Wholesale status check timed out. You can retry safely.',
+  WHOLESALE_API_ERROR: 'Wholesale service returned an error. No provider details are exposed here.',
+};
+
 export function handleWholesaleOrderError(err: unknown): { status: number; body: object } {
   if (err instanceof WholesaleConfigError) {
-    return { status: 503, body: { success: false, error: { code: 'WHOLESALE_CONFIG_ERROR', message: err.message, field: err.field } } };
+    return { status: 503, body: { success: false, error: { code: 'WHOLESALE_CONFIG_ERROR', message: SAFE_WHOLESALE_ERROR_MESSAGES.WHOLESALE_CONFIG_ERROR, field: err.field } } };
   }
   if (err instanceof WholesaleDisabledError) {
-    return { status: 503, body: { success: false, error: { code: 'WHOLESALE_DISABLED', message: err.message } } };
+    return { status: 503, body: { success: false, error: { code: 'WHOLESALE_DISABLED', message: SAFE_WHOLESALE_ERROR_MESSAGES.WHOLESALE_DISABLED } } };
   }
   if (err instanceof WholesaleCircuitOpenError) {
-    return { status: 503, body: { success: false, error: { code: 'CIRCUIT_OPEN', message: err.message } } };
+    return { status: 503, body: { success: false, error: { code: 'CIRCUIT_OPEN', message: SAFE_WHOLESALE_ERROR_MESSAGES.CIRCUIT_OPEN } } };
   }
   if (err instanceof WholesaleTimeoutError) {
-    return { status: 504, body: { success: false, error: { code: 'WHOLESALE_TIMEOUT', message: err.message } } };
+    return { status: 504, body: { success: false, error: { code: 'WHOLESALE_TIMEOUT', message: SAFE_WHOLESALE_ERROR_MESSAGES.WHOLESALE_TIMEOUT } } };
   }
   if (err instanceof WholesaleApiError) {
-    return { status: 502, body: { success: false, error: { code: 'WHOLESALE_API_ERROR', message: err.message } } };
+    return { status: 502, body: { success: false, error: { code: 'WHOLESALE_API_ERROR', message: SAFE_WHOLESALE_ERROR_MESSAGES.WHOLESALE_API_ERROR } } };
   }
   return { status: 500, body: { success: false, error: { code: 'INTERNAL_ERROR', message: 'Unexpected wholesale order error' } } };
 }
 
 type ServiceType = 'MOBILE' | 'BROADBAND';
+
+function attachWholesaleInsights<T extends { status: string; wholesaleLink?: { lastStatusResponse?: unknown } | null }>(
+  service: T,
+  wholesaleLink: T['wholesaleLink'],
+) {
+  const upstreamStatus = wholesaleLink
+    ? extractUpstreamStatusFromResponse(wholesaleLink.lastStatusResponse)
+    : null;
+  const insights = buildWholesaleStaffInsights(upstreamStatus, {
+    hasWholesaleLink: Boolean(wholesaleLink),
+    retailStatus: service.status,
+  });
+  return {
+    upstreamStatus,
+    upstreamFailure: upstreamStatus ? isUpstreamFailureStatus(upstreamStatus) : false,
+    ...insights,
+  };
+}
 
 async function loadMobileService(id: string) {
   return prisma.businessMobileService.findUnique({
@@ -77,8 +112,8 @@ function validateServiceForOrder(
   broadbandPostcode?: string,
 ): string | null {
   if (!service.accountId) return 'Service has no linked account';
-  if (BLOCKED_STATUSES.has(service.status)) return `Cannot request wholesale order for ${service.status} service`;
-  if (!ORDERABLE_STATUSES.has(service.status)) return `Service status must be DRAFT or REQUESTED (current: ${service.status})`;
+  if (BLOCKED_WHOLESALE_ORDER_STATUSES.has(service.status)) return `Cannot request wholesale order for ${service.status} service`;
+  if (!ORDERABLE_WHOLESALE_STATUSES.has(service.status)) return `Service status must be DRAFT or REQUESTED (current: ${service.status})`;
   if (service.wholesaleServiceLinkId) return 'Service already has a wholesale link';
   if (serviceType === 'BROADBAND' && !broadbandPostcode?.trim()) return 'Broadband service requires a postcode before wholesale order';
   return null;
@@ -146,6 +181,10 @@ export async function requestWholesaleOrderForService(
 
   const linkStatus = mapWholesaleLinkStatus(orderResult.status);
   const newRetailStatus = service.status === 'DRAFT' ? 'REQUESTED' : service.status;
+  const staffWarning = buildWholesaleStaffInsights(orderResult.status, {
+    hasWholesaleLink: true,
+    retailStatus: newRetailStatus,
+  }).staffWarning;
 
   const result = await prisma.$transaction(async (tx) => {
     const link = await tx.itsiMobileWholesaleServiceLink.create({
@@ -158,6 +197,7 @@ export async function requestWholesaleOrderForService(
         safeProviderReference: null,
         status: linkStatus,
         lastSyncedAt: new Date(),
+        lastStatusCheckedAt: new Date(),
         lastStatusResponse: sanitizeStatusResponse({
           orderId: orderResult.orderId,
           status: orderResult.status,
@@ -181,38 +221,56 @@ export async function requestWholesaleOrderForService(
       });
     }
 
-    await tx.timelineEvent.create({
-      data: {
-        type: 'WHOLESALE_ORDER_REQUESTED',
-        accountId: service.accountId,
-        actorId: actorId ?? null,
-        actorType: 'STAFF',
-        meta: {
+    await writeServiceLifecycleEvent(
+      service.accountId,
+      'WHOLESALE_ORDER_REQUESTED',
+      {
+        source: 'ITSI_MOBILE',
+        serviceId,
+        serviceReference: service.serviceReference,
+        businessServiceType: serviceType,
+        orderId: orderResult.orderId,
+        linkId: link.id,
+        previousStatus: service.status,
+        newStatus: newRetailStatus,
+        upstreamStatus: orderResult.status,
+        staffWarning: staffWarning ?? undefined,
+        reason: 'wholesale_order_requested',
+      },
+      actorId,
+      tx,
+    );
+
+    if (newRetailStatus !== service.status) {
+      await writeServiceLifecycleEvent(
+        service.accountId,
+        'SERVICE_STATUS_UPDATED',
+        {
+          source: 'ITSI_MOBILE',
           serviceId,
           serviceReference: service.serviceReference,
           businessServiceType: serviceType,
-          orderId: orderResult.orderId,
-          linkId: link.id,
+          previousStatus: service.status,
+          newStatus: newRetailStatus,
+          reason: 'wholesale_order_requested',
         },
-      },
-    });
-
-    if (newRetailStatus !== service.status) {
-      await tx.timelineEvent.create({
-        data: {
-          type: 'SERVICE_STATUS_UPDATED',
-          accountId: service.accountId,
-          actorId: actorId ?? null,
-          actorType: 'STAFF',
-          meta: { serviceId, serviceReference: service.serviceReference, from: service.status, to: newRetailStatus },
-        },
-      });
+        actorId,
+        tx,
+      );
     }
 
     return { service: updatedService, wholesaleLink: link };
   });
 
-  return { data: { ...result.service, _serviceType: serviceType, wholesaleLink: result.wholesaleLink } };
+  const insights = attachWholesaleInsights(result.service, result.wholesaleLink);
+  return {
+    data: {
+      ...result.service,
+      _serviceType: serviceType,
+      wholesaleLink: result.wholesaleLink,
+      wholesaleInsights: insights,
+    },
+  };
 }
 
 export async function getWholesaleStatusForService(serviceType: ServiceType, serviceId: string) {
@@ -222,11 +280,14 @@ export async function getWholesaleStatusForService(serviceType: ServiceType, ser
 
   if (!service) return { error: { status: 404, body: { success: false, error: { code: 'NOT_FOUND', message: `${serviceType} service not found` } } } };
 
+  const insights = attachWholesaleInsights(service, service.wholesaleLink);
+
   return {
     data: {
       service: { ...service, _serviceType: serviceType },
       wholesaleLink: service.wholesaleLink,
       wholesaleEnabled: isWholesaleEnabled(),
+      wholesaleInsights: insights,
     },
   };
 }
@@ -257,6 +318,10 @@ export async function refreshWholesaleStatusForService(
   const sanitized = sanitizeStatusResponse(statusResult);
   const linkStatus = mapWholesaleLinkStatus(statusResult.status);
   const promoteActive = shouldPromoteRetailToActive(statusResult.status, service.status);
+  const insights = buildWholesaleStaffInsights(statusResult.status, {
+    hasWholesaleLink: true,
+    retailStatus: promoteActive ? 'ACTIVE' : service.status,
+  });
 
   const result = await prisma.$transaction(async (tx) => {
     const link = await tx.itsiMobileWholesaleServiceLink.update({
@@ -282,29 +347,53 @@ export async function refreshWholesaleStatusForService(
           include: { ...SERVICE_INCLUDE, site: { select: { id: true, name: true, postcode: true } } },
         });
       }
-      await tx.timelineEvent.create({
-        data: {
-          type: 'SERVICE_STATUS_UPDATED',
-          accountId: service.accountId,
-          actorId: actorId ?? null,
-          actorType: 'STAFF',
-          meta: { serviceId, serviceReference: service.serviceReference, from: service.status, to: 'ACTIVE', reason: 'wholesale_status_refresh' },
+      await writeServiceLifecycleEvent(
+        service.accountId,
+        'SERVICE_STATUS_UPDATED',
+        {
+          source: 'ITSI_MOBILE',
+          serviceId,
+          serviceReference: service.serviceReference,
+          businessServiceType: serviceType,
+          previousStatus: service.status,
+          newStatus: 'ACTIVE',
+          upstreamStatus: statusResult.status,
+          reason: 'wholesale_status_refresh',
         },
-      });
+        actorId,
+        tx,
+      );
     }
 
-    await tx.timelineEvent.create({
-      data: {
-        type: 'WHOLESALE_STATUS_REFRESHED',
-        accountId: service.accountId,
-        actorId: actorId ?? null,
-        actorType: 'STAFF',
-        meta: { serviceId, orderId, linkId: link.id, upstreamStatus: statusResult.status, linkStatus },
+    await writeServiceLifecycleEvent(
+      service.accountId,
+      'WHOLESALE_STATUS_REFRESHED',
+      {
+        source: 'ITSI_MOBILE',
+        serviceId,
+        serviceReference: service.serviceReference,
+        businessServiceType: serviceType,
+        orderId,
+        linkId: link.id,
+        previousStatus: service.status,
+        newStatus: promoteActive ? 'ACTIVE' : service.status,
+        upstreamStatus: statusResult.status,
+        staffWarning: insights.staffWarning ?? undefined,
+        reason: 'wholesale_status_refresh',
       },
-    });
+      actorId,
+      tx,
+    );
 
     return { service: updatedService, wholesaleLink: link };
   });
 
-  return { data: { ...result.service, _serviceType: serviceType, wholesaleLink: result.wholesaleLink } };
+  return {
+    data: {
+      ...result.service,
+      _serviceType: serviceType,
+      wholesaleLink: result.wholesaleLink,
+      wholesaleInsights: attachWholesaleInsights(result.service, result.wholesaleLink),
+    },
+  };
 }

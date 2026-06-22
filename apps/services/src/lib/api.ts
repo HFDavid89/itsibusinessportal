@@ -71,10 +71,18 @@ export interface ItsiMobileWholesaleServiceLink {
   updatedAt:                  string;
 }
 
+export interface WholesaleInsights {
+  upstreamStatus: string | null;
+  upstreamFailure: boolean;
+  staffWarning: string | null;
+  suggestedAction: string | null;
+}
+
 export interface WholesaleStatusResponse {
   service: AnyService;
   wholesaleLink: ItsiMobileWholesaleServiceLink | null;
   wholesaleEnabled: boolean;
+  wholesaleInsights?: WholesaleInsights;
 }
 
 export interface RequestWholesaleOrderInput {

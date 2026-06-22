@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@itsi-business/core": "workspace:*",
     "@itsi-business/staff-shell": "workspace:*",
     "@itsi-business/types": "workspace:*",
     "@itsi-business/ui": "workspace:*",

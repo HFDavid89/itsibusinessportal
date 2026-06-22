@@ -3,6 +3,8 @@ export const CUSTOMER_INVOICE_STATUSES = ['ISSUED', 'PART_PAID', 'PAID', 'OVERDU
 
 export const OPEN_TICKET_STATUSES = ['OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'WAITING_ITSI_MOBILE'] as const;
 
+export { toPortalStatusLabel, PORTAL_RETAIL_STATUS_LABELS } from '@itsi-business/core';
+
 export const CUSTOMER_TICKET_STATUS_LABELS: Record<string, string> = {
   OPEN: 'Open',
   WAITING_CUSTOMER: 'Awaiting your response',

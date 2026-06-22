@@ -32,7 +32,7 @@ export default function FleetPage() {
                     <td>{s.mobileNumber ?? '—'}</td>
                     <td>{s.simLabel ?? '—'}</td>
                     <td>{s.costCentre ?? '—'}</td>
-                    <td><StatusPill tone={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status}</StatusPill></td>
+                    <td><StatusPill tone={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.statusLabel ?? s.status}</StatusPill></td>
                     <td>{fmtPence(s.retailPricePence)}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
