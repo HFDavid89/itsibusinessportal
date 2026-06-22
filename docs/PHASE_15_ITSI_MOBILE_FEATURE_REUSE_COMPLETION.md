@@ -6,7 +6,48 @@
 
 Systematically refocus mature Itsi Mobile Portal patterns into Itsi Business so the platform feels like a complete business-focused portal — not a separate scaffold.
 
-## Wave 2 — Portal depth and shared table patterns (69efa7a → current)
+## Wave 3 — Staff operational depth (82d88b9 → current)
+
+### Itsi Mobile patterns copied/refocused
+
+| Area | Itsi Mobile source | Itsi Business implementation |
+|---|---|---|
+| Staff detail headers | CRM `AccountHero`, service detail chrome | `@itsi-business/ui` `DetailHeader` |
+| Related records panels | Account workspace linked lists | `@itsi-business/ui` `RelatedRecordsPanel` |
+| Staff empty states | Desk/CRM guided empty panels | `@itsi-business/ui` `StaffEmptyState` |
+| Account command centre | CRM account overview + next actions | CRM Account 360 work items + tickets panels, quick actions |
+| Billing staff dashboard | Admin billing KPI pattern | Outstanding/overdue/due-soon KPIs, top overdue accounts |
+| Desk ticket queue | Support ticket list filters | `DataTable` + `FilterBar`, account filter, work item column |
+| Services record detail | Service command panel | `DetailHeader`, `WorkItemsPanel`, CRM/Desk quick links |
+| Work queue cross-app | CRM next-action / task lists | Panels in CRM, Services, Billing invoice; admin work KPIs |
+| Admin settings | Settings scaffold | `DeferredSettingsPanel` — env-managed vs UI-deferred (no fake controls) |
+
+### Staff-side pages completed in Wave 3
+
+- CRM Account 360 overview — open tickets panel, open work items panel, quick actions (Desk/Billing/Services)
+- Billing dashboard — outstanding/overdue totals, due soon, top overdue accounts
+- Billing invoice detail — CRM account link, billing work queue link
+- Desk ticket queue — shared `DataTable`/`FilterBar`, account ID filter
+- Services record detail — `DetailHeader`, linked work items panel
+- Work queue — `DataTable`/`FilterBar`, account ID filter from CRM deep links
+- Admin overview — work queue KPIs (open, assigned to me, due soon, breached)
+- Admin settings — explicit deferred settings panel
+
+### API enhancements
+
+- `GET /api/v1/work-items` — `serviceId` filter for service detail panels
+
+### Placeholder reduction
+
+- Admin `SettingsPlaceholder` ("Coming soon") replaced with `DeferredSettingsPanel` documenting env-managed, UI-deferred, and blocked settings
+- CRM Account 360 uses real ticket and work item APIs (not `_count` stubs alone)
+- Billing dashboard computes real overdue/due-soon aggregates from invoice list
+
+### Order tracking decision (Part H)
+
+Dedicated staff/customer order tracking page **not added**. Service detail already covers lifecycle via wholesale fulfilment panel (mobile/broadband) and energy tracking panel. Order status remains integrated into service record detail until 13B-2 wholesale E2E enables richer tracking.
+
+## Wave 2 — Portal depth and shared table patterns (69efa7a → 82d88b9)
 
 ### Itsi Mobile patterns copied/refocused
 
@@ -78,7 +119,7 @@ Systematically refocus mature Itsi Mobile Portal patterns into Itsi Business so 
 
 - Portal pay invoice / PDF — online payment deferred
 - Portal SIM/network controls — 13B-2 blocked, support ticket CTA
-- Admin settings — SettingsPlaceholder
+- Admin settings — `DeferredSettingsPanel` (env-managed + explicit defer reasons)
 - Desk wholesale escalation — until `ITSI_MOBILE_WHOLESALE_ENABLED`
 
 ## Portal / staff boundary notes
@@ -88,14 +129,21 @@ Systematically refocus mature Itsi Mobile Portal patterns into Itsi Business so 
 - Staff admin dashboard uses platform-wide stats (staff/platform realm only)
 - Energy renewals/check-ins shown with customer-safe labels only
 
-## Remaining gaps
+## Remaining gaps (post Wave 3)
 
-- Admin settings full configuration UI
-- Online invoice payment and PDF download
+- Online invoice payment and PDF download (portal + staff)
 - Wholesale billing reconciliation (requires 13B-2 + billing bridge)
-- Shared DataTable component (tables remain per-app, as in Itsi Mobile)
-- Order tracking dedicated page (service detail covers local lifecycle for now)
 - Fidelity Energy live API integration
+- Staff role permission matrix UI
+- SLA policy configuration UI
+- Dedicated order tracking page (deferred — integrated in service detail)
+- Desk ticket list work item counts on list API (detail only today)
+
+## Remaining gaps (pre Wave 3 — resolved in Wave 3)
+
+- ~~Admin settings full configuration UI~~ → explicit deferred panel
+- ~~Shared DataTable component~~ → `@itsi-business/ui` used in portal (Wave 2) and staff (Wave 3)
+- ~~Order tracking dedicated page~~ → documented as integrated in service detail
 
 ## Blocked live network controls
 

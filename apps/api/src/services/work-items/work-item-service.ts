@@ -89,6 +89,7 @@ export async function listWorkItems(params: {
   type?: string;
   serviceType?: string;
   accountId?: string;
+  serviceId?: string;
   ticketId?: string;
   assignedToStaffUserId?: string;
   assignedToMe?: string;
@@ -109,6 +110,7 @@ export async function listWorkItems(params: {
     ...(params.type && { type: params.type }),
     ...(params.serviceType && { serviceType: params.serviceType }),
     ...(params.accountId && { accountId: params.accountId }),
+    ...(params.serviceId && { serviceId: params.serviceId }),
     ...(params.ticketId && { ticketId: params.ticketId }),
     ...(params.assignedToStaffUserId && { assignedToStaffUserId: params.assignedToStaffUserId }),
     ...(params.assignedToMe && { assignedToStaffUserId: params.assignedToMe }),

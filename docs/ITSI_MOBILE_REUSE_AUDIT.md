@@ -377,3 +377,16 @@
 | Billing expandable rows | **Refocus** | Portal `/billing` with status tabs and payment instructions | Online pay, PDF generation |
 | CRM account tab panels | **Refocus** | `TabEmptyState` guided empty states | Provider tabs |
 | Per-app table markup | **Refocus** | `@itsi-business/ui` DataTable, FilterBar, LoadingList | Premature full abstraction |
+
+### Wave 3 additions — staff operational depth
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| CRM account overview panels | **Refocus** | Open tickets + work items panels, quick actions to Desk/Billing/Services | Provider notes, wholesale costs |
+| Admin settings scaffold | **Refocus** | `DeferredSettingsPanel` — env vs UI-deferred vs blocked | Fake configuration controls |
+| Billing admin KPI dashboard | **Refocus** | Outstanding/overdue/due-soon, top overdue accounts | Wholesale reconciliation |
+| Desk ticket queue | **Refocus** | DataTable + FilterBar, account filter | Provider payload leakage |
+| Service record command panel | **Refocus** | DetailHeader, WorkItemsPanel, CRM/Desk links | Live SIM/network controls |
+| Work queue cross-app links | **Refocus** | CRM, Services, Billing, Admin overview integration | Portal work item visibility |
+| Staff detail/related panels | **Refocus** | `DetailHeader`, `RelatedRecordsPanel`, `StaffEmptyState` | Over-abstraction (≥2 apps only) |
+| Order tracking page | **Skip (deferred)** | Lifecycle integrated in service detail | Dedicated page until 13B-2 E2E |

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppShell, SERVICES_NAV_GROUPS } from '@itsi-business/staff-shell';
+import { DataTable, FilterBar, StaffEmptyState } from '@itsi-business/ui';
 import { workItemsApi, type WorkItem, type WorkQueueStats } from '../../lib/api';
 
 const SLA_CLS: Record<string, string> = {
@@ -30,13 +31,33 @@ function StatCard({ label, value, href, accent }: { label: string; value: number
   return href ? <Link href={href}>{inner}</Link> : inner;
 }
 
+const FILTER_CHIPS = [
+  { key: '', label: 'All open' },
+  { key: 'mine', label: 'Assigned to me' },
+  { key: 'unassigned', label: 'Unassigned' },
+  { key: 'dueSoon', label: 'Due soon' },
+  { key: 'breached', label: 'Breached' },
+  { key: 'waiting', label: 'Waiting Itsi Mobile' },
+];
+
 export default function WorkQueuePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-sm text-muted">Loading…</div>}>
+      <WorkQueuePageInner />
+    </Suspense>
+  );
+}
+
+function WorkQueuePageInner() {
   const searchParams = useSearchParams();
   const initialFilter = searchParams.get('filter') ?? '';
+  const accountIdParam = searchParams.get('accountId') ?? '';
+
   const [stats, setStats] = useState<WorkQueueStats | null>(null);
   const [items, setItems] = useState<WorkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(initialFilter);
+  const [accountId, setAccountId] = useState(accountIdParam);
 
   useEffect(() => {
     const params: Record<string, string> = { limit: '50' };
@@ -45,6 +66,7 @@ export default function WorkQueuePage() {
     if (filter === 'breached') params.breached = 'true';
     if (filter === 'dueSoon') params.dueSoon = 'true';
     if (filter === 'waiting') params.status = 'WAITING_ITSI_MOBILE';
+    if (accountId) params.accountId = accountId;
 
     Promise.all([
       workItemsApi.stats(),
@@ -53,7 +75,7 @@ export default function WorkQueuePage() {
       setStats(s.data);
       setItems(list.data);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [filter]);
+  }, [filter, accountId]);
 
   return (
     <AppShell navGroups={SERVICES_NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">
@@ -76,64 +98,48 @@ export default function WorkQueuePage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {[
-            { key: '', label: 'All open' },
-            { key: 'mine', label: 'Assigned to me' },
-            { key: 'unassigned', label: 'Unassigned' },
-            { key: 'dueSoon', label: 'Due soon' },
-            { key: 'breached', label: 'Breached' },
-            { key: 'waiting', label: 'Waiting Itsi Mobile' },
-          ].map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => { setLoading(true); setFilter(f.key); }}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                filter === f.key ? 'border-accent bg-accent/10 text-accent' : 'border-border text-muted hover:text-foreground'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <FilterBar search={accountId} onSearchChange={setAccountId} searchPlaceholder="Filter by account ID…">
+          <div className="flex flex-wrap gap-2">
+            {FILTER_CHIPS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => { setLoading(true); setFilter(f.key); }}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                  filter === f.key ? 'border-accent bg-accent/10 text-accent' : 'border-border text-muted hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </FilterBar>
 
-        <div className="border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-surface-raised text-[11px] uppercase tracking-wider text-muted">
-              <tr>
-                <th className="text-left px-4 py-2">Priority</th>
-                <th className="text-left px-4 py-2">Type</th>
-                <th className="text-left px-4 py-2">Title</th>
-                <th className="text-left px-4 py-2">Account</th>
-                <th className="text-left px-4 py-2">SLA</th>
-                <th className="text-left px-4 py-2">Due</th>
-                <th className="text-left px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted">Loading…</td></tr>
-              ) : items.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted">No work items match this filter.</td></tr>
-              ) : items.map((item) => (
-                <tr key={item.id} className="hover:bg-surface-raised/50">
-                  <td className={`px-4 py-3 text-xs ${PRIORITY_CLS[item.priority] ?? ''}`}>{item.priority}</td>
-                  <td className="px-4 py-3 text-xs text-muted">{item.type.replace(/_/g, ' ')}</td>
-                  <td className="px-4 py-3">
-                    <Link href={`/work-queue/${item.id}`} className="font-medium text-foreground hover:text-accent">{item.title}</Link>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted">{item.account?.companyName ?? '—'}</td>
-                  <td className={`px-4 py-3 text-xs font-semibold ${SLA_CLS[item.slaStatus ?? 'ON_TRACK']}`}>{item.slaStatus ?? 'ON_TRACK'}</td>
-                  <td className="px-4 py-3 text-xs text-muted">
-                    {item.dueAt ? new Date(item.dueAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-xs">{item.status.replace(/_/g, ' ')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <div className="text-sm text-muted text-center py-12">Loading work items…</div>
+        ) : items.length === 0 ? (
+          <StaffEmptyState title="No work items" message="No items match the current filter." />
+        ) : (
+          <DataTable
+            rows={items}
+            rowKey={(item) => item.id}
+            columns={[
+              { key: 'priority', header: 'Priority', cell: (item) => <span className={`text-xs ${PRIORITY_CLS[item.priority] ?? ''}`}>{item.priority}</span> },
+              { key: 'type', header: 'Type', cell: (item) => <span className="text-xs text-muted">{item.type.replace(/_/g, ' ')}</span> },
+              { key: 'title', header: 'Title', cell: (item) => (
+                <Link href={`/work-queue/${item.id}`} className="font-medium text-foreground hover:text-accent">{item.title}</Link>
+              ) },
+              { key: 'account', header: 'Account', cell: (item) => <span className="text-xs text-muted">{item.account?.companyName ?? '—'}</span> },
+              { key: 'sla', header: 'SLA', cell: (item) => <span className={`text-xs font-semibold ${SLA_CLS[item.slaStatus ?? 'ON_TRACK']}`}>{item.slaStatus ?? 'ON_TRACK'}</span> },
+              { key: 'due', header: 'Due', cell: (item) => (
+                <span className="text-xs text-muted">
+                  {item.dueAt ? new Date(item.dueAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                </span>
+              ) },
+              { key: 'status', header: 'Status', cell: (item) => <span className="text-xs">{item.status.replace(/_/g, ' ')}</span> },
+            ]}
+          />
+        )}
       </div>
     </AppShell>
   );

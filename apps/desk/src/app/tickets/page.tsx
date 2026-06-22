@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@itsi-business/staff-shell';
+import { DataTable, FilterBar, StaffEmptyState } from '@itsi-business/ui';
 import { deskApi, type BusinessTicket } from '../../lib/api';
 
 const NAV_GROUPS = [
@@ -28,10 +30,6 @@ const PRIORITY_CLS: Record<string, string> = {
   LOW:    'text-muted',
 };
 
-const ALL_STATUSES  = ['', 'OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'WAITING_ITSI_MOBILE', 'RESOLVED', 'CLOSED'];
-const ALL_PRIORITIES = ['', 'URGENT', 'HIGH', 'NORMAL', 'LOW'];
-const ALL_CATEGORIES = ['', 'GENERAL', 'BILLING', 'MOBILE', 'BROADBAND', 'ENERGY', 'SOFTWARE', 'ACCOUNT'];
-
 function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${STATUS_CLS[status] ?? 'bg-border text-muted border-border'}`}>
@@ -40,14 +38,57 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const STATUS_OPTIONS = [
+  { value: '', label: 'Any status' },
+  { value: 'OPEN', label: 'Open' },
+  { value: 'WAITING_CUSTOMER', label: 'Waiting customer' },
+  { value: 'WAITING_INTERNAL', label: 'Waiting internal' },
+  { value: 'WAITING_ITSI_MOBILE', label: 'Waiting Itsi Mobile' },
+  { value: 'RESOLVED', label: 'Resolved' },
+  { value: 'CLOSED', label: 'Closed' },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: '', label: 'Any priority' },
+  { value: 'URGENT', label: 'Urgent' },
+  { value: 'HIGH', label: 'High' },
+  { value: 'NORMAL', label: 'Normal' },
+  { value: 'LOW', label: 'Low' },
+];
+
+const CATEGORY_OPTIONS = [
+  { value: '', label: 'Any category' },
+  { value: 'GENERAL', label: 'General' },
+  { value: 'BILLING', label: 'Billing' },
+  { value: 'MOBILE', label: 'Mobile' },
+  { value: 'BROADBAND', label: 'Broadband' },
+  { value: 'ENERGY', label: 'Energy' },
+  { value: 'SOFTWARE', label: 'Software' },
+  { value: 'ACCOUNT', label: 'Account' },
+];
+
 export default function TicketsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-sm text-muted">Loading…</div>}>
+      <TicketsPageInner />
+    </Suspense>
+  );
+}
+
+function TicketsPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const accountIdParam = searchParams.get('accountId') ?? '';
+
   const [tickets, setTickets] = useState<BusinessTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [total, setTotal]     = useState(0);
   const [search, setSearch]   = useState('');
-  const [status, setStatus]   = useState('');
-  const [priority, setPriority] = useState('');
+  const [status, setStatus]   = useState(searchParams.get('status') ?? '');
+  const [priority, setPriority] = useState(searchParams.get('priority') ?? '');
+  const [category, setCategory] = useState('');
+  const [accountId, setAccountId] = useState(accountIdParam);
   const [page, setPage]       = useState(1);
   const LIMIT = 50;
 
@@ -59,6 +100,8 @@ export default function TicketsPage() {
         search:   search || undefined,
         status:   status || undefined,
         priority: priority || undefined,
+        category: category || undefined,
+        accountId: accountId || undefined,
         page,
         limit: LIMIT,
       });
@@ -70,116 +113,79 @@ export default function TicketsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, status, priority, page]);
+  }, [search, status, priority, category, accountId, page]);
 
-  useEffect(() => { setPage(1); }, [search, status, priority]);
+  useEffect(() => { setPage(1); }, [search, status, priority, category, accountId]);
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t); }, [load]);
 
   return (
     <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Desk' }} workspace="desk">
-      <div className="flex flex-col h-full min-h-0">
-
-        {/* Toolbar */}
-        <div className="shrink-0 border-b border-border bg-surface px-5 py-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-
-          {/* Status tabs */}
-          <div className="flex items-center gap-1 flex-wrap">
-            {['', 'OPEN', 'WAITING_CUSTOMER', 'WAITING_ITSI_MOBILE', 'RESOLVED', 'CLOSED'].map((s) => (
-              <button key={s} type="button" onClick={() => setStatus(s)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
-                  status === s ? 'bg-accent/10 text-accent' : 'text-muted hover:text-foreground hover:bg-surface-raised'
-                }`}>
-                {s ? s.replace(/_/g, ' ') : 'All'}
-              </button>
-            ))}
+      <div className="flex flex-col h-full min-h-0 p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Ticket queue</h1>
+            <p className="text-sm text-muted">{loading ? 'Loading…' : <><span className="font-semibold text-foreground">{total}</span> tickets</>}</p>
           </div>
-
-          <span className="hidden sm:block w-px h-4 bg-border shrink-0" />
-
-          {/* Priority filter */}
-          <select value={priority} onChange={(e) => setPriority(e.target.value)}
-            className="text-xs border border-border rounded-lg bg-background px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-accent/30">
-            {ALL_PRIORITIES.map((p) => <option key={p} value={p}>{p || 'Any priority'}</option>)}
-          </select>
-
-          <p className="text-xs text-muted shrink-0 ml-auto">
-            {loading ? 'Loading…' : <><span className="font-semibold text-foreground">{total}</span> tickets</>}
-          </p>
-
-          <div className="relative">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tickets…"
-              className="border border-border rounded-lg bg-background text-sm pl-8 pr-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent/30 w-40 sm:w-52" />
-          </div>
-
           <Link href="/tickets/new" className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-bold hover:opacity-90 whitespace-nowrap">
             + New Ticket
           </Link>
         </div>
 
-        {error && <div className="mx-5 mt-3 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger shrink-0">{error}</div>}
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search tickets…"
+          filters={[
+            { id: 'status', value: status, onChange: setStatus, label: 'Status', options: STATUS_OPTIONS },
+            { id: 'priority', value: priority, onChange: setPriority, label: 'Priority', options: PRIORITY_OPTIONS },
+            { id: 'category', value: category, onChange: setCategory, label: 'Category', options: CATEGORY_OPTIONS },
+          ]}
+        >
+          <input
+            type="text"
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            placeholder="Account ID filter"
+            className="px-3 py-2 rounded-xl border border-border bg-background text-sm text-foreground min-w-[180px]"
+          />
+        </FilterBar>
 
-        {/* Table */}
-        <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead className="sticky top-0 z-10 bg-surface border-b border-border">
-              <tr>
-                {['Ticket', 'Subject', 'Account', 'Category', 'Status', 'Priority', 'Updated'].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted whitespace-nowrap">{h}</th>
-                ))}
-                <th className="px-4 py-2.5 w-8" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {loading ? (
-                [...Array(6)].map((_, i) => (
-                  <tr key={i}>{[...Array(8)].map((__, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-surface-raised rounded animate-pulse" style={{ width: j === 1 ? '160px' : '80px' }} />
-                    </td>
-                  ))}</tr>
-                ))
-              ) : tickets.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center">
-                    <p className="text-sm font-medium text-foreground">No tickets found</p>
-                    <p className="text-xs text-muted mt-1">{search || status || priority ? 'Try adjusting your filters.' : 'Create the first ticket to get started.'}</p>
-                    {!search && !status && !priority && (
-                      <Link href="/tickets/new" className="mt-3 inline-block text-xs font-semibold text-accent hover:underline">Create ticket →</Link>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                tickets.map((t) => (
-                  <tr key={t.id} className="hover:bg-surface-raised/40 transition-colors group">
-                    <td className="px-4 py-2.5 text-xs text-muted font-mono">{t.ticketNumber}</td>
-                    <td className="px-4 py-2.5">
-                      <Link href={`/tickets/${t.id}`} className="text-sm font-semibold text-foreground group-hover:text-accent transition-colors line-clamp-1">
-                        {t.subject}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted">{t.account?.companyName ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted">{t.category}</td>
-                    <td className="px-4 py-2.5"><StatusBadge status={t.status} /></td>
-                    <td className={`px-4 py-2.5 text-xs ${PRIORITY_CLS[t.priority] ?? 'text-muted'}`}>{t.priority}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">
-                      {new Date(t.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Link href={`/tickets/${t.id}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent text-lg leading-none">→</Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{error}</div>}
 
-        {/* Pagination */}
+        {loading ? (
+          <div className="text-sm text-muted text-center py-12">Loading tickets…</div>
+        ) : tickets.length === 0 ? (
+          <StaffEmptyState
+            title="No tickets found"
+            message={search || status || priority || category || accountId ? 'Try adjusting your filters.' : 'Create the first ticket to get started.'}
+            action={!search && !status && !priority && !category && !accountId ? { label: 'Create ticket', href: '/tickets/new' } : undefined}
+          />
+        ) : (
+          <DataTable
+            rows={tickets}
+            rowKey={(t) => t.id}
+            onRowClick={(t) => router.push(`/tickets/${t.id}`)}
+            columns={[
+              { key: 'number', header: 'Ticket', cell: (t) => <span className="text-xs font-mono text-muted">{t.ticketNumber}</span> },
+              { key: 'subject', header: 'Subject', cell: (t) => <span className="text-sm font-semibold text-foreground">{t.subject}</span> },
+              { key: 'account', header: 'Account', cell: (t) => <span className="text-xs text-muted">{t.account?.companyName ?? '—'}</span> },
+              { key: 'category', header: 'Category', cell: (t) => <span className="text-xs text-muted">{t.category}</span> },
+              { key: 'status', header: 'Status', cell: (t) => <StatusBadge status={t.status} /> },
+              { key: 'priority', header: 'Priority', cell: (t) => <span className={`text-xs ${PRIORITY_CLS[t.priority] ?? 'text-muted'}`}>{t.priority}</span> },
+              { key: 'work', header: 'Work', cell: (t) => (
+                <span className="text-xs text-muted">{(t.workItems?.length ?? 0) > 0 ? `${t.workItems!.length} item(s)` : '—'}</span>
+              ) },
+              { key: 'updated', header: 'Updated', cell: (t) => (
+                <span className="text-xs text-muted whitespace-nowrap">
+                  {new Date(t.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+              ) },
+            ]}
+          />
+        )}
+
         {total > LIMIT && (
-          <div className="shrink-0 px-5 py-3 border-t border-border flex items-center justify-between gap-2 bg-surface">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted">Page {page} of {Math.ceil(total / LIMIT)}</p>
             <div className="flex items-center gap-2">
               <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}

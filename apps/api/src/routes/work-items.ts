@@ -90,6 +90,7 @@ export async function workItemRoutes(app: FastifyInstance) {
       type: q.type,
       serviceType: q.serviceType,
       accountId: q.accountId,
+      serviceId: q.serviceId,
       ticketId: q.ticketId,
       assignedToStaffUserId: q.assignedToStaffUserId,
       assignedToMe,

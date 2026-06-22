@@ -29,7 +29,19 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-interface Stats { draft: number; issued: number; overdue: number; paidMtd: number; totalPendingPence: number; }
+interface Stats {
+  draft: number;
+  issued: number;
+  partPaid: number;
+  paid: number;
+  void: number;
+  overdue: number;
+  overduePence: number;
+  dueSoon: number;
+  paidMtd: number;
+  totalPendingPence: number;
+  topOverdue: Array<{ accountId: string; companyName: string; totalPence: number; count: number }>;
+}
 
 export default function BillingDashboardPage() {
   const [stats, setStats]     = useState<Stats | null>(null);
@@ -44,13 +56,37 @@ export default function BillingDashboardPage() {
       const all = res.data;
       const now = new Date();
       const mtdStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const dueSoonCutoff = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const overdueInvoices = all.filter((i) => i.status === 'OVERDUE');
+      const dueSoon = all.filter((i) =>
+        ['ISSUED', 'PART_PAID'].includes(i.status) && i.dueDate && new Date(i.dueDate) >= now && new Date(i.dueDate) <= dueSoonCutoff,
+      );
+      const overdueByAccount = new Map<string, { companyName: string; totalPence: number; count: number }>();
+      for (const inv of overdueInvoices) {
+        const key = inv.accountId;
+        const cur = overdueByAccount.get(key) ?? { companyName: inv.account?.companyName ?? 'Unknown', totalPence: 0, count: 0 };
+        cur.totalPence += Math.max(0, inv.totalPence - inv.amountPaidPence);
+        cur.count += 1;
+        overdueByAccount.set(key, cur);
+      }
+      const topOverdue = [...overdueByAccount.entries()]
+        .map(([accountId, v]) => ({ accountId, ...v }))
+        .sort((a, b) => b.totalPence - a.totalPence)
+        .slice(0, 5);
+
       setStats({
         draft:             all.filter((i) => i.status === 'DRAFT').length,
         issued:            all.filter((i) => i.status === 'ISSUED').length,
-        overdue:           all.filter((i) => i.status === 'OVERDUE').length,
+        partPaid:          all.filter((i) => i.status === 'PART_PAID').length,
+        paid:              all.filter((i) => i.status === 'PAID').length,
+        void:              all.filter((i) => i.status === 'VOID').length,
+        overdue:           overdueInvoices.length,
+        overduePence:      overdueInvoices.reduce((s, i) => s + Math.max(0, i.totalPence - i.amountPaidPence), 0),
+        dueSoon:           dueSoon.length,
         paidMtd:           all.filter((i) => i.status === 'PAID' && new Date(i.updatedAt) >= mtdStart).length,
         totalPendingPence: all.filter((i) => ['ISSUED', 'PART_PAID', 'OVERDUE'].includes(i.status))
           .reduce((s, i) => s + Math.max(0, i.totalPence - i.amountPaidPence), 0),
+        topOverdue,
       });
       setRecent(all.filter((i) => i.status !== 'VOID').slice(0, 8));
     }).catch(() => setError('Failed to load billing data'))
@@ -58,10 +94,12 @@ export default function BillingDashboardPage() {
   }, []);
 
   const statCards = [
-    { label: 'Draft',           value: stats ? String(stats.draft)   : '—', href: '/invoices?status=DRAFT',   cls: 'text-muted' },
-    { label: 'Issued',          value: stats ? String(stats.issued)  : '—', href: '/invoices?status=ISSUED',  cls: 'text-blue-600' },
-    { label: 'Overdue',         value: stats ? String(stats.overdue) : '—', href: '/invoices?status=OVERDUE', cls: 'text-rose-600' },
-    { label: 'Balance Pending', value: stats ? money(stats.totalPendingPence) : '—', href: '/invoices', cls: 'text-amber-700' },
+    { label: 'Outstanding',     value: stats ? money(stats.totalPendingPence) : '—', href: '/invoices',                cls: 'text-amber-700' },
+    { label: 'Overdue total',   value: stats ? money(stats.overduePence) : '—',      href: '/invoices?status=OVERDUE', cls: 'text-rose-600' },
+    { label: 'Due soon (7d)',   value: stats ? String(stats.dueSoon) : '—',          href: '/invoices?status=ISSUED',  cls: 'text-warning' },
+    { label: 'Draft',           value: stats ? String(stats.draft) : '—',          href: '/invoices?status=DRAFT',   cls: 'text-muted' },
+    { label: 'Issued',          value: stats ? String(stats.issued) : '—',         href: '/invoices?status=ISSUED',  cls: 'text-blue-600' },
+    { label: 'Paid (MTD)',      value: stats ? String(stats.paidMtd) : '—',        href: '/invoices?status=PAID',    cls: 'text-emerald-700' },
   ];
 
   return (
@@ -80,7 +118,7 @@ export default function BillingDashboardPage() {
 
         {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{error}</div>}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {statCards.map((c) => (
             <Link key={c.label} href={c.href}
               className="bg-surface border border-border rounded-2xl p-4 hover:bg-surface-raised transition-colors block">
@@ -89,6 +127,26 @@ export default function BillingDashboardPage() {
             </Link>
           ))}
         </div>
+
+        {stats && stats.topOverdue.length > 0 && (
+          <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border">
+              <h2 className="text-sm font-bold text-foreground">Top overdue accounts</h2>
+            </div>
+            <div className="divide-y divide-border">
+              {stats.topOverdue.map((row) => (
+                <Link key={row.accountId} href={`/invoices?accountId=${row.accountId}&status=OVERDUE`}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-surface-raised transition-colors gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{row.companyName}</p>
+                    <p className="text-xs text-muted">{row.count} overdue invoice{row.count > 1 ? 's' : ''}</p>
+                  </div>
+                  <span className="text-sm font-bold text-rose-600">{money(row.totalPence)}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="bg-surface border border-border rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AppShell } from '@itsi-business/staff-shell';
+import { AppShell, WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import {
   billingApi, money, balanceDue,
   type BusinessInvoice, type BusinessInvoiceLine, type ServiceType,
@@ -515,7 +515,12 @@ export default function InvoiceDetailPage() {
               <p className="font-bold text-foreground text-sm">Account</p>
               <p className="text-foreground font-medium">{invoice.account?.companyName ?? '—'}</p>
               <p className="font-mono text-muted">{invoice.account?.accountNumber}</p>
-              <p className="font-mono text-muted text-[10px] break-all">{invoice.accountId}</p>
+              <a href={`${WORKSPACE_URLS.crm}/accounts/${invoice.accountId}`} className="inline-block text-accent font-semibold hover:underline">
+                Open in CRM →
+              </a>
+              <a href={`${WORKSPACE_URLS.services}/work-queue?accountId=${invoice.accountId}`} className="block text-accent font-semibold hover:underline">
+                Billing work queue →
+              </a>
             </div>
 
             {/* Payments */}

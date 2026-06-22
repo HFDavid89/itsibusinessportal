@@ -7,6 +7,8 @@ export interface AccountOverviewData {
   services: BusinessService[];
   timelineCount: number;
   recentTimeline: Array<{ id: string; type: string; occurredAt: string }>;
+  openTickets: Array<{ id: string; ticketNumber: string; subject: string; status: string; priority: string; updatedAt: string }>;
+  openWorkItems: Array<{ id: string; type: string; title: string; status: string; priority: string; dueAt?: string | null; slaStatus?: string }>;
 }
 
 export interface HealthLabel {

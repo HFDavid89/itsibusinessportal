@@ -11,6 +11,7 @@ import { BusinessAccountHealthSummary, buildBusinessHealthMetrics } from './_com
 import { BusinessAccountTabBar } from './_components/BusinessAccountTabBar';
 import { BusinessAccountProfileRail } from './_components/BusinessAccountProfileRail';
 import { BusinessAccountOverviewDashboard } from './_components/BusinessAccountOverviewDashboard';
+import { BusinessAccountQuickActions } from './_components/BusinessAccountQuickActions';
 import {
   ContactsPanel,
   SitesPanel,
@@ -68,11 +69,15 @@ export default function AccountDetailPage() {
 
   const loadOverview = useCallback(async () => {
     try {
-      const [invoicesRes, servicesRes, timelineRes] = await Promise.all([
+      const [invoicesRes, servicesRes, timelineRes, ticketsRes, workItemsRes] = await Promise.all([
         crmApi.accountInvoices(id),
         crmApi.accountServices(id),
         crmApi.timeline(id),
+        crmApi.accountTickets(id, { limit: 20 }),
+        crmApi.accountWorkItems(id, { limit: 20 }),
       ]);
+      const openStatuses = new Set(['OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'WAITING_ITSI_MOBILE']);
+      const openWorkStatuses = new Set(['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'WAITING_ITSI_MOBILE']);
       setOverview({
         invoices: invoicesRes.data,
         services: servicesRes.data,
@@ -82,6 +87,12 @@ export default function AccountDetailPage() {
           type: ev.type,
           occurredAt: ev.occurredAt,
         })),
+        openTickets: ticketsRes.data
+          .filter((t) => openStatuses.has(t.status))
+          .slice(0, 8),
+        openWorkItems: workItemsRes.data
+          .filter((w) => openWorkStatuses.has(w.status))
+          .slice(0, 8),
       });
     } catch {
       setOverview(null);
@@ -190,7 +201,8 @@ export default function AccountDetailPage() {
                   <div className="lg:col-span-3">
                     <BusinessAccountProfileRail account={account} onTabChange={setTab} onCopy={handleCopy} />
                   </div>
-                  <div className="lg:col-span-9">
+                  <div className="lg:col-span-9 space-y-5">
+                    <BusinessAccountQuickActions accountId={account.id} onTabChange={setTab} />
                     <BusinessAccountOverviewDashboard account={account} overview={overview} onTabChange={setTab} />
                   </div>
                 </div>

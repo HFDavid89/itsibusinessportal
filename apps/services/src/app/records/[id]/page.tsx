@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '@itsi-business/staff-shell';
+import { DetailHeader } from '@itsi-business/ui';
 import { servicesApi, money, fmt, type AnyService, type BusinessMobileService, type BusinessBroadbandService, type BusinessEnergyService } from '../../../lib/api';
 import { WholesaleFulfilmentPanel } from '../../../components/WholesaleFulfilmentPanel';
 import { EnergyTrackingPanel } from '../../../components/EnergyTrackingPanel';
+import { WorkItemsPanel } from '../../../components/WorkItemsPanel';
+import { WORKSPACE_URLS } from '@itsi-business/staff-shell';
 
 const NAV_GROUPS = [
   { label: 'Services', items: [
@@ -128,26 +131,39 @@ export default function ServiceDetailPage() {
           <span className="text-foreground font-mono">{svc.serviceReference}</span>
         </div>
 
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">{svc.displayName}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] font-mono text-muted">{svc.serviceReference}</span>
+        <DetailHeader
+          eyebrow="Service record"
+          title={svc.displayName}
+          subtitle={`${svc.serviceReference} · ${svc._serviceType}`}
+          badges={
+            <>
               <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${TYPE_CLS[svc._serviceType] ?? 'bg-border/40 text-muted border-border'}`}>
                 {svc._serviceType}
               </span>
               <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${STATUS_CLS[svc.status] ?? STATUS_CLS.DRAFT}`}>
                 {svc.status}
               </span>
-            </div>
-          </div>
-          {!editing && (
-            <button onClick={startEdit}
-              className="px-4 py-2 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface-raised transition-colors">
-              Edit
-            </button>
-          )}
-        </div>
+            </>
+          }
+          actions={
+            <>
+              {svc.account && (
+                <a href={`${WORKSPACE_URLS.crm}/accounts/${svc.accountId}`} className="px-3 py-2 rounded-xl border border-border text-xs font-semibold hover:bg-surface-raised">
+                  Open account
+                </a>
+              )}
+              <a href={`${WORKSPACE_URLS.desk}/tickets/new?accountId=${svc.accountId}`} className="px-3 py-2 rounded-xl border border-border text-xs font-semibold hover:bg-surface-raised">
+                Create ticket
+              </a>
+              {!editing && (
+                <button onClick={startEdit}
+                  className="px-4 py-2 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface-raised transition-colors">
+                  Edit
+                </button>
+              )}
+            </>
+          }
+        />
 
         {/* Account & catalogue */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -205,6 +221,8 @@ export default function ServiceDetailPage() {
             onUpdated={(updated) => setSvc(updated)}
           />
         )}
+
+        <WorkItemsPanel accountId={svc.accountId} serviceId={id} title="Linked work items" />
 
         {/* Edit form */}
         {editing && (

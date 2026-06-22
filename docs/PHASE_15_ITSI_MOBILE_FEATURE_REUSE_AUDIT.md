@@ -48,7 +48,7 @@
 | App | Route | Current state | Phase 15 action |
 |---|---|---|---|
 | **Admin** | `/` | Static KPI scaffold | Wire to `/api/v1/stats/dashboard` + wholesale status |
-| **Admin** | `/settings` | SettingsPlaceholder | Keep deferred — document reason |
+| **Admin** | `/settings` | SettingsPlaceholder | **Wave 3:** `DeferredSettingsPanel` — env-managed vs UI-deferred |
 | **CRM** | `/`, `/accounts/*` | Real API | Polish empty states; remove any demo remnants |
 | **Billing** | `/` | Real KPIs + wholesale reconciliation placeholder | Remove fake panel; link to Services work queue |
 | **Billing** | `/invoices/[id]` | Wholesale cost ref field label | Rename to staff-only internal ref |

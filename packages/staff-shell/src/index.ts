@@ -10,6 +10,7 @@ export * from './platform-access-guard';
 export * from './notification-bell';
 export * from './settings-cog';
 export * from './settings-placeholder';
+export * from './deferred-settings-panel';
 export * from './staff-page-chrome';
 export * from './use-workspace-badges';
 export * from './login-page';

@@ -58,12 +58,14 @@ export default function InvoicesPage() {
 function InvoicesPageInner() {
   const searchParams  = useSearchParams();
   const statusParam   = (searchParams.get('status') ?? '') as InvoiceStatus | '';
+  const accountIdParam = searchParams.get('accountId') ?? '';
 
   const [invoices, setInvoices] = useState<BusinessInvoice[]>([]);
   const [total, setTotal]       = useState(0);
   const [page, setPage]         = useState(1);
   const [status, setStatus]     = useState<InvoiceStatus | ''>(statusParam);
   const [search, setSearch]     = useState('');
+  const [accountId, setAccountId] = useState(accountIdParam);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [busy, setBusy]         = useState<string | null>(null);
@@ -77,6 +79,7 @@ function InvoicesPageInner() {
     try {
       const res = await billingApi.invoices({
         status: status || undefined,
+        accountId: accountId || undefined,
         search: search || undefined,
         page,
         limit: LIMIT,
@@ -88,7 +91,7 @@ function InvoicesPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [status, search, page]);
+  }, [status, search, accountId, page]);
 
   useEffect(() => { load(); }, [load]);
 

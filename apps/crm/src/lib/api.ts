@@ -246,7 +246,38 @@ export const crmApi = {
 
   markEnergyLost: (id: string) =>
     apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/mark-lost`, { method: 'POST' }),
+
+  accountTickets: (accountId: string, params?: { limit?: number }) => {
+    const q = new URLSearchParams({ accountId, limit: String(params?.limit ?? 20) });
+    return apiFetch<ApiResponse<AccountTicket[]>>(`/api/v1/tickets?${q.toString()}`);
+  },
+
+  accountWorkItems: (accountId: string, params?: { limit?: number }) => {
+    const q = new URLSearchParams({ accountId, limit: String(params?.limit ?? 20) });
+    return apiFetch<ApiResponse<AccountWorkItem[]>>(`/api/v1/work-items?${q.toString()}`);
+  },
 };
+
+export interface AccountTicket {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  status: string;
+  priority: string;
+  category: string;
+  updatedAt: string;
+}
+
+export interface AccountWorkItem {
+  id: string;
+  type: string;
+  status: string;
+  priority: string;
+  title: string;
+  dueAt?: string | null;
+  slaStatus?: string;
+  slaBreached?: boolean;
+}
 
 interface EnergyRecord {
   id: string;

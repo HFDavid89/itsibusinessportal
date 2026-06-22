@@ -1,8 +1,10 @@
 'use client';
 
+import { WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import type { BusinessAccount, BusinessInvoice, BusinessService } from '../../../../lib/api';
 import type { AccountOverviewData, AccountTab } from './account-types';
 import { NextActionPanel } from './NextActionPanel';
+import { RelatedRecordsPanel } from '@itsi-business/ui';
 
 const EVENT_LABELS: Record<string, string> = {
   ACCOUNT_CREATED: 'Account created',
@@ -80,7 +82,8 @@ export function BusinessAccountOverviewDashboard({ account, overview, onTabChang
   const invoices = overview?.invoices ?? [];
   const activeServices = services.filter((s) => s.status === 'ACTIVE');
   const overdueInvoices = invoices.filter((i) => i.status === 'OVERDUE');
-  const openTickets = account._count?.tickets ?? 0;
+  const openTicketCount = overview?.openTickets.length ?? account._count?.tickets ?? 0;
+  const openWorkItems = overview?.openWorkItems ?? [];
   const contactCount = account._count?.contacts ?? account.contacts?.length ?? 0;
   const siteCount = account._count?.sites ?? account.sites?.length ?? 0;
 
@@ -90,12 +93,13 @@ export function BusinessAccountOverviewDashboard({ account, overview, onTabChang
   return (
     <div className="space-y-5">
       <NextActionPanel
+        accountId={account.id}
         accountStatus={account.status}
         overdueInvoices={{
           count: overdueInvoices.length,
           totalPence: overdueInvoices.reduce((s, i) => s + i.totalPence, 0),
         }}
-        openTickets={openTickets}
+        openTickets={openTicketCount}
         contactCount={contactCount}
         siteCount={siteCount}
         serviceCount={services.length}
@@ -160,7 +164,7 @@ export function BusinessAccountOverviewDashboard({ account, overview, onTabChang
         >
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2.5">
-              <SnapshotStat label="Open tickets" value={openTickets} status={openTickets > 0 ? 'warning' : 'healthy'} />
+              <SnapshotStat label="Open tickets" value={openTicketCount} status={openTicketCount > 0 ? 'warning' : 'healthy'} />
               <SnapshotStat label="Events" value={overview?.timelineCount ?? 0} status="healthy" />
             </div>
             {(overview?.recentTimeline ?? []).slice(0, 3).map((ev) => (
@@ -173,6 +177,38 @@ export function BusinessAccountOverviewDashboard({ account, overview, onTabChang
             ))}
           </div>
         </SnapshotCard>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <RelatedRecordsPanel
+          title="Open tickets"
+          actionLabel="View in Desk →"
+          actionHref={`${WORKSPACE_URLS.desk}/tickets?accountId=${account.id}`}
+          emptyMessage="No open support tickets for this account."
+          items={(overview?.openTickets ?? []).map((t) => ({
+            id: t.id,
+            title: t.subject,
+            meta: `${t.ticketNumber} · ${t.status.replace(/_/g, ' ')} · ${t.priority}`,
+            href: `${WORKSPACE_URLS.desk}/tickets/${t.id}`,
+          }))}
+        />
+        <RelatedRecordsPanel
+          title="Open work items"
+          actionLabel="View work queue →"
+          actionHref={`${WORKSPACE_URLS.services}/work-queue?accountId=${account.id}`}
+          emptyMessage="No open staff work items for this account."
+          items={openWorkItems.map((w) => ({
+            id: w.id,
+            title: w.title,
+            meta: `${w.type.replace(/_/g, ' ')} · ${w.status.replace(/_/g, ' ')}${w.dueAt ? ` · due ${new Date(w.dueAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}` : ''}`,
+            href: `${WORKSPACE_URLS.services}/work-queue/${w.id}`,
+            badge: w.slaStatus === 'BREACHED' ? (
+              <span className="text-[10px] font-bold text-danger">SLA breached</span>
+            ) : w.slaStatus === 'DUE_SOON' ? (
+              <span className="text-[10px] font-bold text-warning">Due soon</span>
+            ) : undefined,
+          }))}
+        />
       </div>
     </div>
   );

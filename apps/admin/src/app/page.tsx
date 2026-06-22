@@ -18,6 +18,13 @@ interface DashboardStats {
   staff: { active: number };
 }
 
+interface WorkQueueStats {
+  open: number;
+  assignedToMe: number;
+  dueSoon: number;
+  breached: number;
+}
+
 interface WholesaleStatus {
   enabled: boolean;
   message?: string;
@@ -26,6 +33,7 @@ interface WholesaleStatus {
 
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [workStats, setWorkStats] = useState<WorkQueueStats | null>(null);
   const [wholesale, setWholesale] = useState<WholesaleStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,10 +41,12 @@ export default function AdminOverviewPage() {
   useEffect(() => {
     Promise.all([
       apiFetch<{ success: true; data: DashboardStats }>('/api/v1/stats/dashboard'),
+      apiFetch<{ success: true; data: WorkQueueStats }>('/api/v1/work-items/stats').catch(() => ({ success: true as const, data: null as WorkQueueStats | null })),
       apiFetch<{ success: true; data: WholesaleStatus }>('/api/v1/wholesale/status').catch(() => ({ success: true as const, data: { enabled: false, message: 'Status unavailable' } })),
     ])
-      .then(([statsRes, wholesaleRes]) => {
+      .then(([statsRes, workRes, wholesaleRes]) => {
         setStats(statsRes.data);
+        setWorkStats(workRes.data);
         setWholesale(wholesaleRes.data);
       })
       .catch(() => setError('Unable to load platform overview.'))
@@ -70,6 +80,27 @@ export default function AdminOverviewPage() {
               <MetricCard label="Open tickets" value={String(stats.tickets.open)} tone="secondary" />
               <MetricCard label="Outstanding invoices" value={fmt(stats.invoices.outstandingPence)} change={stats.invoices.overduePence > 0 ? `${fmt(stats.invoices.overduePence)} overdue` : 'None overdue'} changeType={stats.invoices.overduePence > 0 ? 'negative' : 'positive'} />
             </div>
+
+            {workStats && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <a href={`${WORKSPACE_URLS.services}/work-queue`} className="command-card block hover:border-accent/30 transition-colors">
+                  <p className="text-xs text-muted">Work queue open</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{workStats.open}</p>
+                </a>
+                <a href={`${WORKSPACE_URLS.services}/work-queue?filter=mine`} className="command-card block hover:border-accent/30 transition-colors">
+                  <p className="text-xs text-muted">Assigned to me</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{workStats.assignedToMe}</p>
+                </a>
+                <a href={`${WORKSPACE_URLS.services}/work-queue?filter=dueSoon`} className="command-card block hover:border-accent/30 transition-colors">
+                  <p className="text-xs text-muted">Due soon</p>
+                  <p className="text-2xl font-bold text-warning mt-1">{workStats.dueSoon}</p>
+                </a>
+                <a href={`${WORKSPACE_URLS.services}/work-queue?filter=breached`} className="command-card block hover:border-accent/30 transition-colors">
+                  <p className="text-xs text-muted">SLA breached</p>
+                  <p className="text-2xl font-bold text-danger mt-1">{workStats.breached}</p>
+                </a>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
               <div className="command-card">

@@ -1,9 +1,11 @@
 'use client';
 
+import { WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import type { AccountTab } from './account-types';
 
 export interface NextActionPanelProps {
   accountStatus: string;
+  accountId?: string;
   overdueInvoices: { totalPence: number; count: number };
   openTickets: number;
   contactCount: number;
@@ -55,8 +57,10 @@ function buildActionItems(props: NextActionPanelProps): ActionItem[] {
     items.push({
       priority: 2, severity: 'info',
       title: `${props.openTickets} open support ticket${props.openTickets > 1 ? 's' : ''}`,
-      reason: 'Review customer support activity in the timeline.',
-      cta: { label: 'View timeline', onClick: () => props.onTabChange('timeline') },
+      reason: 'Review and respond in Desk.',
+      cta: props.accountId
+        ? { label: 'Open in Desk', onClick: () => { window.location.href = `${WORKSPACE_URLS.desk}/tickets?accountId=${props.accountId}`; } }
+        : { label: 'View timeline', onClick: () => props.onTabChange('timeline') },
     });
   }
 
