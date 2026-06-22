@@ -31,6 +31,7 @@ Gap analysis: [`docs/WHOLESALE_API_CONTRACT_GAP_REPORT.md`](./WHOLESALE_API_CONT
 | Service record routes | `apps/api/src/routes/services-wholesale.ts` |
 | Shared types | `packages/types/src/wholesale.ts` |
 | Contract tests | `apps/api/src/services/wholesale/wholesale-contract.test.ts` |
+| Simulated 13B-1 tests | `apps/api/src/services/wholesale/wholesale-simulated.test.ts` |
 
 ## Internal routing pattern
 
@@ -75,11 +76,12 @@ itsiMobileClient.getOrderStatusBySource(config, serviceType, serviceId)
 | **13A** | Itsi Business client + contract docs + payload tests | **Complete** (`864eefe`) — family order/status paths |
 | **14W (Business)** | 14W attribution payloads, by-source status, upstream field sanitization | **Complete** — aligns with Itsi Mobile `e50d13d` |
 | **14W (Mobile)** | Itsi Mobile family routes + reseller attribution | **Reference** — `HFDavid89/itsimobileportal` @ `e50d13d` |
-| **13B** | E2E smoke test Itsi Business → Itsi Mobile | **Ready to run** — see [`PHASE_13B_WHOLESALE_E2E_VERIFICATION.md`](./PHASE_13B_WHOLESALE_E2E_VERIFICATION.md) |
+| **13B-1** | Simulated contract verification (mock Itsi Mobile 14W) | **Active** — see [`PHASE_13B1_SIMULATED_WHOLESALE_CONTRACT.md`](./PHASE_13B1_SIMULATED_WHOLESALE_CONTRACT.md) |
+| **13B-2** | Staging/live E2E smoke test | **Deferred** — see [`PHASE_13B_WHOLESALE_E2E_VERIFICATION.md`](./PHASE_13B_WHOLESALE_E2E_VERIFICATION.md) |
 
-> **Gate:** Do not extend portal/SIM controls until 13B passes.
+> **Gate:** Staff SLA/request hardening may begin after 13B-1. Portal SIM live network controls remain blocked until 13B-2.
 
-## Itsi Mobile deliverables (required for 13B)
+## Itsi Mobile deliverables (required for 13B-2)
 
 1. Implement family-specific routes per `WHOLESALE_API_CONTRACT.md`
 2. Add partner auth for `X-Client: itsi-business`
