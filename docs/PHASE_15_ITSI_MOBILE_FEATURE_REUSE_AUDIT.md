@@ -1,6 +1,7 @@
 # Phase 15 — Itsi Mobile Feature Reuse Audit
 
 > Generated: Phase 15 — Itsi Mobile Feature Reuse and Business Portal Completion  
+> **Status: CLOSED** — Phase 16 closeout at `docs/PHASE_16_PLACEHOLDER_UX_CLOSEOUT.md`  
 > Source repo: `HFDavid89/itsimobileportal`  
 > Target repo: `HFDavid89/itsibusinessportal`
 

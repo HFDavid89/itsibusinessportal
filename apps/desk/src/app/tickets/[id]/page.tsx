@@ -459,12 +459,16 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            {/* Escalation — placeholder */}
+            {/* Escalation — deferred until wholesale bridge E2E */}
             <div className="bg-surface border border-border rounded-2xl p-4 space-y-3">
-              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Escalation</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Escalation</h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-border/50 text-muted border border-border font-semibold">Deferred</span>
+              </div>
               <p className="text-xs text-muted">
-                Escalate to Itsi Mobile wholesale desk when a provider-side fault requires intervention.
-                The escalation route is a placeholder until <code className="text-[10px] bg-surface-raised px-1 rounded">ITSI_MOBILE_WHOLESALE_ENABLED=true</code>.
+                Escalate provider-side faults to the wholesale fulfilment desk when{' '}
+                <code className="text-[10px] bg-surface-raised px-1 rounded">ITSI_MOBILE_WHOLESALE_ENABLED</code>{' '}
+                and 13B-2 staging E2E pass. Recording escalation locally remains available below.
               </p>
               {escalateMsg && (
                 <p className={`text-xs ${escalateMsg.startsWith('Failed') || escalateMsg.includes('not available') ? 'text-danger' : 'text-emerald-600'}`}>

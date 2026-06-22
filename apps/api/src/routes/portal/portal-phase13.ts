@@ -8,6 +8,8 @@ import {
   portalGuard,
   assertPortalUserOwnedByAccount,
   sanitizeTicketForPortal,
+  isCustomerSafeActivityType,
+  toPortalActivityLabel,
 } from './helpers';
 import {
   loadPortalServiceById,
@@ -262,13 +264,13 @@ export function registerPortalPhase13Routes(app: FastifyInstance) {
         events
           .filter((ev) => {
             const meta = ev.meta as Record<string, unknown> | null;
-            return meta?.serviceId === id || meta?.serviceReference === sim.serviceReference;
+            const matchesService = meta?.serviceId === id || meta?.serviceReference === sim.serviceReference;
+            return matchesService && isCustomerSafeActivityType(ev.type);
           })
           .slice(0, 6)
           .map((ev) => ({
             id: ev.id,
-            type: ev.type,
-            label: ev.type.replace(/_/g, ' ').toLowerCase(),
+            label: toPortalActivityLabel(ev.type),
             occurredAt: ev.occurredAt.toISOString(),
           })),
       ),

@@ -1,6 +1,21 @@
 # Phase 15 — Itsi Mobile Feature Reuse Completion
 
-> Phase 15 — Itsi Mobile Feature Reuse and Business Portal Completion
+> Phase 15 — Itsi Mobile Feature Reuse and Business Portal Completion  
+> **Status: CLOSED** — see Phase 16 closeout (`docs/PHASE_16_PLACEHOLDER_UX_CLOSEOUT.md`)
+
+## Phase 15 closeout summary
+
+Phase 15 refocused Itsi Business from mature Itsi Mobile Portal patterns across customer portal and staff operational apps. Three waves shipped to `origin/main` at `5c738bb`. Phase 16 quality gate confirmed no blocking placeholders remain.
+
+| Wave | Commit area | Key deliverables |
+|------|-------------|------------------|
+| Wave 1 | Portal cockpit, admin KPIs, services summary | Shared UI foundations, stats API |
+| Wave 2 | Portal products/fleet/tickets/billing, CRM empty states | DataTable, FilterBar, LoadingList |
+| Wave 3 | Staff CRM 360, billing, desk, services, work queue | DetailHeader, RelatedRecordsPanel, DeferredSettingsPanel |
+
+**Deferred to register:** See `docs/DEFERRED_FEATURE_REGISTER.md`  
+**Blocked by 13B-2:** Live network controls, wholesale billing reconciliation, live escalation API  
+**Next phase:** Phase 17 — management reporting and operational dashboards
 
 ## Purpose
 

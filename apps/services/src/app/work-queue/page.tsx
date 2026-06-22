@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppShell, SERVICES_NAV_GROUPS } from '@itsi-business/staff-shell';
-import { DataTable, FilterBar, StaffEmptyState } from '@itsi-business/ui';
+import { DataTable, FilterBar, StaffEmptyState, fmtDateTime } from '@itsi-business/ui';
 import { workItemsApi, type WorkItem, type WorkQueueStats } from '../../lib/api';
 
 const SLA_CLS: Record<string, string> = {
@@ -132,9 +132,7 @@ function WorkQueuePageInner() {
               { key: 'account', header: 'Account', cell: (item) => <span className="text-xs text-muted">{item.account?.companyName ?? '—'}</span> },
               { key: 'sla', header: 'SLA', cell: (item) => <span className={`text-xs font-semibold ${SLA_CLS[item.slaStatus ?? 'ON_TRACK']}`}>{item.slaStatus ?? 'ON_TRACK'}</span> },
               { key: 'due', header: 'Due', cell: (item) => (
-                <span className="text-xs text-muted">
-                  {item.dueAt ? new Date(item.dueAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
-                </span>
+                <span className="text-xs text-muted">{fmtDateTime(item.dueAt)}</span>
               ) },
               { key: 'status', header: 'Status', cell: (item) => <span className="text-xs">{item.status.replace(/_/g, ' ')}</span> },
             ]}

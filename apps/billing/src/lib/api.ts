@@ -1,6 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001';
-
-// ── Types ──────────────────────────────────────────────────────────────────────
+/**
+ * Typed Billing API client — uses shared staff-shell transport.
+ */
+import { apiFetch } from '@itsi-business/staff-shell';
 
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PART_PAID' | 'PAID' | 'OVERDUE' | 'VOID';
 export type ServiceType   = 'MOBILE' | 'BROADBAND' | 'ENERGY' | 'SOFTWARE' | 'SUPPORT' | 'OTHER';
@@ -58,23 +59,7 @@ export interface BusinessInvoice {
   payments?: BusinessPayment[];
   _count?: { lines: number; payments: number };
 }
-
-// ── Fetch helper ───────────────────────────────────────────────────────────────
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
-  });
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json?.error?.message ?? `API error ${res.status}`);
-  }
-  return json as T;
-}
-
-// ── Typed API client ───────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 export const billingApi = {
   invoices: (params?: {
@@ -101,13 +86,13 @@ export const billingApi = {
   createInvoice: (data: { accountId: string; dueDate?: string; notes?: string }) =>
     apiFetch<{ success: true; data: BusinessInvoice }>('/api/v1/invoices', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   patchInvoice: (id: string, data: { dueDate?: string; notes?: string }) =>
     apiFetch<{ success: true; data: BusinessInvoice }>(`/api/v1/invoices/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   addLine: (invoiceId: string, data: {
@@ -121,7 +106,7 @@ export const billingApi = {
     wholesaleCostReference?: string;
   }) => apiFetch<{ success: true; data: BusinessInvoiceLine }>(`/api/v1/invoices/${invoiceId}/lines`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data,
   }),
 
   patchLine: (invoiceId: string, lineId: string, data: Partial<{
@@ -133,7 +118,7 @@ export const billingApi = {
     taxRate: number;
   }>) => apiFetch<{ success: true; data: BusinessInvoiceLine }>(`/api/v1/invoices/${invoiceId}/lines/${lineId}`, {
     method: 'PATCH',
-    body: JSON.stringify(data),
+    body: data,
   }),
 
   deleteLine: (invoiceId: string, lineId: string) =>
@@ -145,7 +130,7 @@ export const billingApi = {
   voidInvoice: (id: string, reason?: string) =>
     apiFetch<{ success: true; data: BusinessInvoice }>(`/api/v1/invoices/${id}/void`, {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: { reason },
     }),
 
   markPaid: (id: string, data: {
@@ -156,7 +141,7 @@ export const billingApi = {
     paidAt?: string;
   }) => apiFetch<{ success: true; data: { invoice: BusinessInvoice; payment: BusinessPayment } }>(`/api/v1/invoices/${id}/mark-paid`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data,
   }),
 };
 

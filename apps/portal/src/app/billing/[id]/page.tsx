@@ -108,12 +108,6 @@ export default function InvoiceDetailPage() {
                 </div>
               )}
             </PortalPanel>
-
-            {invoice.notes && (
-              <PortalPanel title="Notes">
-                <p className="text-sm text-muted whitespace-pre-wrap">{invoice.notes}</p>
-              </PortalPanel>
-            )}
           </>
         )}
       </div>

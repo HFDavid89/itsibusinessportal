@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Phase 15 — Placeholder detection gate for user-facing apps.
+ * Phase 16 — Placeholder detection gate for user-facing apps.
  *
  * Flags obvious placeholder copy, demo data, static operational KPIs,
  * and TODO markers in portal/staff frontends.
@@ -82,7 +82,7 @@ function scanFile(path) {
   return hits.length ? { file: rel, hits } : null;
 }
 
-console.log('Phase 15 Placeholder Scan\n');
+console.log('Phase 16 Placeholder Scan\n');
 
 const files = SCAN_APPS.flatMap((app) => {
   const dir = join(APPS_DIR, app, 'src');

@@ -9,6 +9,8 @@ import {
   assertTicketOwnedByAccount,
   assertPortalUserOwnedByAccount,
   sanitizeTicketForPortal,
+  isCustomerSafeActivityType,
+  toPortalActivityLabel,
 } from './helpers';
 import { CUSTOMER_INVOICE_STATUSES, OPEN_TICKET_STATUSES, balanceDuePence, toPortalStatusLabel } from './constants';
 import { toPortalEnergyStatusLabel } from '@itsi-business/core';
@@ -258,14 +260,13 @@ export async function portalRoutes(app: FastifyInstance) {
 
     const activeServices = mobileServices + broadbandServices + energyServices;
 
-    const activityLabels: Record<string, string> = {
-      CUSTOMER_PRODUCT_ENQUIRY_CREATED: 'Product enquiry submitted',
-      CUSTOMER_TICKET_CREATED: 'Support ticket raised',
-      CUSTOMER_SERVICE_TICKET_CREATED: 'Service support request',
-      CUSTOMER_SIM_METADATA_UPDATED: 'SIM details updated',
-      ENERGY_CHECK_IN_COMPLETED: 'Energy check-in completed',
-      ENERGY_RENEWAL_WINDOW_OPEN: 'Energy renewal window opened',
-    };
+    const customerSafeActivity = recentTimeline
+      .filter((ev) => isCustomerSafeActivityType(ev.type))
+      .map((ev) => ({
+        id: ev.id,
+        label: toPortalActivityLabel(ev.type),
+        createdAt: ev.occurredAt.toISOString(),
+      }));
 
     return reply.send({
       success: true,
@@ -296,12 +297,7 @@ export async function portalRoutes(app: FastifyInstance) {
             contractEndDate: e.contractEndDate?.toISOString() ?? null,
           })),
         },
-        recentActivity: recentTimeline.map((ev) => ({
-          id: ev.id,
-          type: ev.type,
-          label: activityLabels[ev.type] ?? ev.type.replace(/_/g, ' ').toLowerCase(),
-          createdAt: ev.occurredAt.toISOString(),
-        })),
+        recentActivity: customerSafeActivity,
       },
     });
   });
@@ -434,7 +430,7 @@ export async function portalRoutes(app: FastifyInstance) {
       select: {
         id: true, invoiceNumber: true, status: true, issueDate: true, dueDate: true,
         subtotalPence: true, taxTotalPence: true, discountTotalPence: true,
-        totalPence: true, amountPaidPence: true, currency: true, notes: true, createdAt: true,
+        totalPence: true, amountPaidPence: true, currency: true, createdAt: true,
         lines: {
           select: {
             id: true, description: true, serviceType: true, quantity: true,
@@ -656,13 +652,13 @@ export async function portalRoutes(app: FastifyInstance) {
     const [contacts, sites] = await Promise.all([
       contactIds.length
         ? prisma.businessContact.findMany({
-            where: { id: { in: contactIds } },
+            where: { id: { in: contactIds }, accountId },
             select: { id: true, firstName: true, lastName: true, email: true },
           })
         : [],
       siteIds.length
         ? prisma.businessSite.findMany({
-            where: { id: { in: siteIds } },
+            where: { id: { in: siteIds }, accountId },
             select: { id: true, name: true, postcode: true },
           })
         : [],

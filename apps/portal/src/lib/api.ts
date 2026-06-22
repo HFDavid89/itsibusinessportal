@@ -74,7 +74,6 @@ export interface PortalDashboard {
   };
   recentActivity: Array<{
     id: string;
-    type: string;
     label: string;
     createdAt: string;
   }>;
@@ -96,7 +95,6 @@ export interface PortalInvoiceDetail extends PortalInvoiceSummary {
   taxTotalPence: number;
   discountTotalPence: number;
   currency: string;
-  notes: string | null;
   lines: Array<{
     id: string;
     description: string;
@@ -178,7 +176,6 @@ export interface PortalFleetItem {
 
 export interface PortalFleetActivity {
   id: string;
-  type: string;
   label: string;
   occurredAt: string;
 }

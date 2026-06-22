@@ -10,7 +10,7 @@ import { ServiceStatusBadge } from '../../../components/portal-ui/StatusBadges';
 import { RequestSupportModal, NETWORK_CONTROL_ACTIONS } from '../../../components/PortalRequests';
 import { portalApi, fmtPence, fmtDate, TICKET_STATUS_LABELS, type PortalFleetDetail } from '../../../lib/api';
 
-const NETWORK_DEFER_REASON = 'Live network changes are not available yet — raise a support ticket to request this change (blocked until staging E2E passes).';
+const NETWORK_DEFER_REASON = 'Live network changes are not available in the portal yet — raise a support ticket to request this change.';
 
 export default function FleetDetailPage() {
   const { id } = useParams<{ id: string }>();

@@ -390,3 +390,9 @@
 | Work queue cross-app links | **Refocus** | CRM, Services, Billing, Admin overview integration | Portal work item visibility |
 | Staff detail/related panels | **Refocus** | `DetailHeader`, `RelatedRecordsPanel`, `StaffEmptyState` | Over-abstraction (≥2 apps only) |
 | Order tracking page | **Skip (deferred)** | Lifecycle integrated in service detail | Dedicated page until 13B-2 E2E |
+
+### Phase 15 → Phase 16 handoff
+
+- Phase 15 closed at `5c738bb` — no Wave 4 required
+- Phase 16 applied boundary hardening, API transport fixes, deferred register, UX audit
+- Remaining visual consistency (status badges, legacy portal pages) deferred to Phase 17

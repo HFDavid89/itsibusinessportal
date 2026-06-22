@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toStaffEnergyStatusLabel } from '@itsi-business/core';
+import { WORKSPACE_URLS } from '@itsi-business/staff-shell';
 import { energyApi, fmt, type BusinessEnergyService } from '../lib/api';
-
-const CRM_URL = process.env.NEXT_PUBLIC_CRM_URL ?? 'http://localhost:17006';
 
 function DisabledBtn({ label, reason }: { label: string; reason: string }) {
   return (
@@ -91,7 +90,7 @@ export function EnergyTrackingPanel({
             Mark Lost
           </button>
         )}
-        <Link href={`${CRM_URL}/accounts/${record.accountId}`}
+        <Link href={`${WORKSPACE_URLS.crm}/accounts/${record.accountId}`}
           className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-foreground">
           Open Account
         </Link>

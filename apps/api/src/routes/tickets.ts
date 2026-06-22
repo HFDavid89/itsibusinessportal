@@ -288,6 +288,6 @@ export async function ticketRoutes(app: FastifyInstance) {
 
     await writeTimelineEvent(ticket.accountId, 'TICKET_ESCALATED_TO_ITSI_MOBILE', actorId, 'STAFF', { ticketId: id });
 
-    return reply.send({ success: true, data: { message: 'Escalation recorded. Wholesale integration is a future placeholder.' } });
+    return reply.send({ success: true, data: { message: 'Escalation recorded locally. Live wholesale escalation is deferred until 13B-2 staging E2E passes.' } });
   });
 }

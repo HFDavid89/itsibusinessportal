@@ -75,3 +75,38 @@ export function sanitizeTicketForPortal<T extends { status: string; wholesaleEsc
   const { wholesaleEscalationId: _a, wholesaleEscalationReference: _b, assignedToStaffUserId: _c, ...safe } = ticket;
   return safe;
 }
+
+/** Customer-safe timeline event types for portal activity feeds. */
+export const PORTAL_CUSTOMER_ACTIVITY_TYPES = new Set([
+  'CUSTOMER_PRODUCT_ENQUIRY_CREATED',
+  'CUSTOMER_TICKET_CREATED',
+  'CUSTOMER_SERVICE_TICKET_CREATED',
+  'CUSTOMER_SIM_METADATA_UPDATED',
+  'CUSTOMER_SIM_SUPPORT_REQUESTED',
+  'ENERGY_CHECK_IN_COMPLETED',
+  'ENERGY_RENEWAL_WINDOW_OPEN',
+  'ENERGY_RENEWAL_WINDOW_STARTED',
+  'INVOICE_ISSUED',
+  'TICKET_REPLY_ADDED',
+]);
+
+const PORTAL_ACTIVITY_LABELS: Record<string, string> = {
+  CUSTOMER_PRODUCT_ENQUIRY_CREATED: 'Product enquiry submitted',
+  CUSTOMER_TICKET_CREATED: 'Support ticket raised',
+  CUSTOMER_SERVICE_TICKET_CREATED: 'Service support request',
+  CUSTOMER_SIM_METADATA_UPDATED: 'SIM details updated',
+  CUSTOMER_SIM_SUPPORT_REQUESTED: 'SIM support request raised',
+  ENERGY_CHECK_IN_COMPLETED: 'Energy check-in completed',
+  ENERGY_RENEWAL_WINDOW_OPEN: 'Energy renewal window opened',
+  ENERGY_RENEWAL_WINDOW_STARTED: 'Energy renewal window started',
+  INVOICE_ISSUED: 'Invoice issued',
+  TICKET_REPLY_ADDED: 'Support update',
+};
+
+export function toPortalActivityLabel(type: string): string {
+  return PORTAL_ACTIVITY_LABELS[type] ?? 'Account update';
+}
+
+export function isCustomerSafeActivityType(type: string): boolean {
+  return PORTAL_CUSTOMER_ACTIVITY_TYPES.has(type);
+}

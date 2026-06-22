@@ -89,12 +89,12 @@ export const PORTAL_ROLE_LABELS: Record<string, string> = {
 };
 
 export const NETWORK_CONTROL_ACTIONS = [
-  { label: 'Bar SIM', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'Unbar SIM', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'SIM swap', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'Enable roaming', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'Change spend cap', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'PAC / STAC', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'Replacement SIM', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
-  { label: 'Tariff change', reason: 'Live network changes are blocked until staging E2E passes — raise a support ticket to request this change.' },
+  { label: 'Bar SIM', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'Unbar SIM', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'SIM swap', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'Enable roaming', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'Change spend cap', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'PAC / STAC', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'Replacement SIM', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
+  { label: 'Tariff change', reason: 'Live network changes are not available in the portal yet — raise a support ticket to request this change.' },
 ] as const;

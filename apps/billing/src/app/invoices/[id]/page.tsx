@@ -116,8 +116,8 @@ function LineForm({ initial = EMPTY_LINE, onSave, onCancel, saving }: LineFormPr
           <input className={INP} value={f.businessServiceReference} onChange={(e) => set({ businessServiceReference: e.target.value })} placeholder="Internal ref…" />
         </div>
         <div>
-          <label className="text-[10px] font-bold text-muted uppercase tracking-wider block mb-1">Wholesale Cost Ref (placeholder)</label>
-          <input className={INP} value={f.wholesaleCostReference} onChange={(e) => set({ wholesaleCostReference: e.target.value })} placeholder="Not used in Phase 6" />
+          <label className="text-[10px] font-bold text-muted uppercase tracking-wider block mb-1">Internal cost reference</label>
+          <input className={INP} value={f.wholesaleCostReference} onChange={(e) => set({ wholesaleCostReference: e.target.value })} placeholder="Staff-only — deferred until wholesale billing E2E" />
         </div>
       </div>
 
