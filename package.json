@@ -19,6 +19,7 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "check-wiring": "node scripts/check-wiring.mjs",
+    "check-placeholders": "node scripts/check-placeholders.mjs",
     "test": "turbo run test",
     "clean": "turbo run clean",
     "db:migrate": "pnpm --filter @itsi-business/api db:migrate",
