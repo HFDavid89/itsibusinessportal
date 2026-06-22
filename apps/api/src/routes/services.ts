@@ -106,6 +106,26 @@ export async function serviceRoutes(app: FastifyInstance) {
   // Phase 12 — energy tracking routes (before /:id catch-all)
   registerEnergyServiceRoutes(app);
 
+  // ── GET /api/v1/services/summary — aggregate counts for staff dashboard ───
+  app.get('/summary', { preHandler: [readGuard] }, async (_req: any, reply: any) => {
+    const [mobile, broadband, energy, catalogueActive] = await Promise.all([
+      prisma.businessMobileService.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.businessBroadbandService.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.businessEnergyService.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.businessServiceCatalogueItem.count({ where: { status: 'ACTIVE' } }),
+    ]);
+
+    const countActive = (rows: { status: string; _count: { _all: number } }[]) =>
+      rows.filter((r) => r.status === 'ACTIVE' || r.status === 'CONTRACTED').reduce((s, r) => s + r._count._all, 0);
+
+    return reply.send(ok({
+      catalogue: { active: catalogueActive },
+      mobile:    { total: mobile.reduce((s, r) => s + r._count._all, 0), active: countActive(mobile) },
+      broadband: { total: broadband.reduce((s, r) => s + r._count._all, 0), active: countActive(broadband) },
+      energy:    { total: energy.reduce((s, r) => s + r._count._all, 0), active: countActive(energy) },
+    }));
+  });
+
   // ── GET /api/v1/services — aggregate list ─────────────────────────────────
   app.get('/', { preHandler: [readGuard] }, async (req: any, reply: any) => {
     const { accountId, type, status, page = '1', limit = '50' } = req.query as Record<string, string>;

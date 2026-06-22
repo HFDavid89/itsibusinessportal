@@ -135,7 +135,8 @@ describe('Phase 13B-1 — simulated wholesale contract verification', () => {
       const result = await requestWholesaleOrderForService('BROADBAND', service.id, { confirm: true });
 
       assert.equal(result.error?.status, 400);
-      assert.match(String(result.error?.body), /postcode/i);
+      const errBody = result.error?.body as { error?: { message?: string } } | undefined;
+      assert.match(errBody?.error?.message ?? '', /postcode/i);
       assert.equal(mock.requests.length, requestsBefore, 'no upstream call expected');
     });
   });

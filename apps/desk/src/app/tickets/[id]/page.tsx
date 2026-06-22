@@ -482,7 +482,7 @@ export default function TicketDetailPage() {
               <h2 className="text-xs font-bold text-foreground uppercase tracking-wider mb-2">Account</h2>
               <p className="text-sm font-semibold text-foreground">{ticket.account?.companyName}</p>
               <p className="text-xs text-muted font-mono">{ticket.account?.accountNumber}</p>
-              <a href={`http://localhost:4006/accounts/${ticket.accountId}`} target="_blank" rel="noopener noreferrer"
+              <a href={`${WORKSPACE_URLS.crm}/accounts/${ticket.accountId}`} target="_blank" rel="noopener noreferrer"
                 className="mt-2 inline-block text-xs text-accent hover:underline">
                 View in CRM →
               </a>

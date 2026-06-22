@@ -68,22 +68,25 @@ function StatCard({ label, value, sub, href }: StatCardProps) {
 export default function ServicesHome() {
   const [catalogue,     setCatalogue]     = useState<BusinessServiceCatalogueItem[]>([]);
   const [recentServices, setRecentServices] = useState<AnyService[]>([]);
+  const [summary,       setSummary]       = useState<{ catalogue: { active: number }; mobile: { active: number }; broadband: { active: number }; energy: { active: number } } | null>(null);
   const [loading,       setLoading]       = useState(true);
 
   useEffect(() => {
     Promise.all([
       catalogueApi.list({ limit: 50 }),
       servicesApi.list({ limit: 10 }),
-    ]).then(([cat, svc]) => {
+      servicesApi.summary(),
+    ]).then(([cat, svc, sum]) => {
       setCatalogue(cat.data);
       setRecentServices(svc.data);
+      setSummary(sum);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const activeCatalogue = catalogue.filter((c) => c.status === 'ACTIVE');
-  const mobileCount     = recentServices.filter((s) => s._serviceType === 'MOBILE').length;
-  const broadbandCount  = recentServices.filter((s) => s._serviceType === 'BROADBAND').length;
-  const energyCount     = recentServices.filter((s) => s._serviceType === 'ENERGY').length;
+  const mobileCount     = summary?.mobile.active ?? 0;
+  const broadbandCount  = summary?.broadband.active ?? 0;
+  const energyCount     = summary?.energy.active ?? 0;
 
   return (
     <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Services' }} workspace="services">

@@ -118,16 +118,16 @@ export default function BillingDashboardPage() {
           )}
         </div>
 
-        {/* Wholesale reconciliation placeholder */}
+        {/* Wholesale reconciliation — deferred until wholesale billing E2E (13B-2+) */}
         <div className="bg-surface border border-border rounded-2xl p-4">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-bold text-foreground">Wholesale Reconciliation</h2>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-border/50 text-muted border border-border font-semibold">Placeholder</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-border/50 text-muted border border-border font-semibold">Deferred</span>
           </div>
           <p className="text-xs text-muted">
-            Future: reconcile Itsi Business retail invoices against Itsi Mobile wholesale billing.
-            Requires <code className="text-[10px] bg-surface-raised px-1 rounded">ITSI_MOBILE_WHOLESALE_BILLING_ENABLED=true</code>.
-            No wholesale billing calls are made in Phase 6.
+            Reconcile Itsi Business retail invoices against Itsi Mobile wholesale billing once{' '}
+            <code className="text-[10px] bg-surface-raised px-1 rounded">ITSI_MOBILE_WHOLESALE_BILLING_ENABLED</code>{' '}
+            and 13B-2 staging E2E pass. No wholesale billing calls are made in this phase.
           </p>
         </div>
       </div>

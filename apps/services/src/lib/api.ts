@@ -265,7 +265,17 @@ export const catalogueApi = {
     }),
 };
 
+export interface ServicesSummary {
+  catalogue: { active: number };
+  mobile:    { total: number; active: number };
+  broadband: { total: number; active: number };
+  energy:    { total: number; active: number };
+}
+
 export const servicesApi = {
+  summary: () =>
+    apiFetch<{ success: true; data: ServicesSummary }>('/api/v1/services/summary').then((r) => r.data),
+
   list: (params?: {
     accountId?: string;
     type?: 'MOBILE' | 'BROADBAND' | 'ENERGY';
