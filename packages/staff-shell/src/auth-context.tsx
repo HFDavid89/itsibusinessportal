@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastName: '',
         roles: payload.roles ?? (payload.role ? [payload.role] : []),
         realm: payload.realm ?? 'staff',
+        accountId: payload.accountId,
       });
     } catch {
       clearTokens();

@@ -1,13 +1,171 @@
 /**
  * Safe seed / bootstrap for Itsi Business.
  *
- * SAFE: Creates only admin user, roles, and empty permissions.
- * NOT CREATED: Fake business customers, invoices, services, tickets, provider test data.
+ * SAFE: Creates admin user, roles, and empty permissions by default.
+ * Optional SEED_PORTAL_DEMO=true creates a demo business account for portal testing.
  */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+async function seedPortalDemo() {
+  if (process.env.SEED_PORTAL_DEMO !== 'true') return;
+
+  const portalEmail = process.env.SEED_PORTAL_EMAIL ?? 'portal@demo.itsi.business';
+  const portalPassword = process.env.SEED_PORTAL_PASSWORD ?? 'ChangeMe123!';
+
+  const account = await prisma.businessAccount.upsert({
+    where: { accountNumber: 'DEMO-0001' },
+    update: {},
+    create: {
+      accountNumber: 'DEMO-0001',
+      companyName: 'Demo Business Ltd',
+      tradingName: 'Demo Business',
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.portalUser.upsert({
+    where: { email: portalEmail },
+    update: {},
+    create: {
+      accountId: account.id,
+      email: portalEmail,
+      firstName: 'Portal',
+      lastName: 'User',
+      passwordHash: await bcrypt.hash(portalPassword, 12),
+      realm: 'portal',
+    },
+  });
+
+  const site = await prisma.businessSite.upsert({
+    where: { id: 'seed-demo-site' },
+    update: {},
+    create: {
+      id: 'seed-demo-site',
+      accountId: account.id,
+      name: 'Head Office',
+      addressLine1: '1 Demo Street',
+      city: 'London',
+      postcode: 'EC1A 1BB',
+      isPrimary: true,
+    },
+  });
+
+  await prisma.businessContact.upsert({
+    where: { id: 'seed-demo-contact' },
+    update: {},
+    create: {
+      id: 'seed-demo-contact',
+      accountId: account.id,
+      siteId: site.id,
+      firstName: 'Alex',
+      lastName: 'Contact',
+      email: 'contact@demo.itsi.business',
+      phone: '020 7946 0958',
+      role: 'PRIMARY',
+      isPrimary: true,
+    },
+  });
+
+  const catalogue = await prisma.businessServiceCatalogueItem.upsert({
+    where: { sku: 'DEMO-MOB-001' },
+    update: {},
+    create: {
+      sku: 'DEMO-MOB-001',
+      name: 'Business Mobile 20GB',
+      description: 'Business mobile plan with 20GB data',
+      serviceType: 'MOBILE',
+      status: 'ACTIVE',
+      retailPricePence: 2500,
+      setupFeePence: 0,
+      contractTermMonths: 24,
+      taxRate: 20,
+    },
+  });
+
+  await prisma.businessMobileService.upsert({
+    where: { serviceReference: 'SVC-DEMO-MOB-001' },
+    update: {},
+    create: {
+      accountId: account.id,
+      serviceReference: 'SVC-DEMO-MOB-001',
+      displayName: 'Demo Mobile Line',
+      status: 'ACTIVE',
+      retailPricePence: 2500,
+      mobileNumber: '07700 900123',
+      simLabel: 'SIM-001',
+      costCentre: 'Sales',
+      catalogueItemId: catalogue.id,
+    },
+  });
+
+  await prisma.businessBroadbandService.upsert({
+    where: { serviceReference: 'SVC-DEMO-BB-001' },
+    update: {},
+    create: {
+      accountId: account.id,
+      siteId: site.id,
+      serviceReference: 'SVC-DEMO-BB-001',
+      displayName: 'Business Fibre 300',
+      status: 'ACTIVE',
+      retailPricePence: 4500,
+      postcode: 'EC1A 1BB',
+      accessTechnology: 'FTTP',
+    },
+  });
+
+  const invoice = await prisma.businessInvoice.upsert({
+    where: { invoiceNumber: 'INV-DEMO-001' },
+    update: {},
+    create: {
+      invoiceNumber: 'INV-DEMO-001',
+      accountId: account.id,
+      status: 'ISSUED',
+      issueDate: new Date(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      subtotalPence: 7000,
+      taxTotalPence: 1400,
+      totalPence: 8400,
+      amountPaidPence: 0,
+    },
+  });
+
+  await prisma.businessInvoiceLine.upsert({
+    where: { id: 'seed-demo-inv-line' },
+    update: {},
+    create: {
+      id: 'seed-demo-inv-line',
+      invoiceId: invoice.id,
+      description: 'Monthly services',
+      serviceType: 'MOBILE',
+      quantity: 1,
+      unitPricePence: 7000,
+      netAmountPence: 7000,
+      taxRate: 20,
+      taxAmountPence: 1400,
+      grossAmountPence: 8400,
+    },
+  });
+
+  await prisma.businessTicket.upsert({
+    where: { ticketNumber: 'TKT-DEMO-001' },
+    update: {},
+    create: {
+      ticketNumber: 'TKT-DEMO-001',
+      accountId: account.id,
+      subject: 'Welcome to the business portal',
+      description: 'This is a demo support ticket for portal testing.',
+      status: 'OPEN',
+      priority: 'NORMAL',
+      category: 'GENERAL',
+    },
+  });
+
+  console.log(`  Portal demo account: ${account.companyName} (${account.accountNumber})`);
+  console.log(`  Portal demo user: ${portalEmail}`);
+}
 
 async function main() {
   console.log('Seeding Itsi Business database...');
@@ -46,11 +204,15 @@ async function main() {
     },
   });
 
+  await seedPortalDemo();
+
   console.log(`Seed complete.`);
   console.log(`  Admin role: ${adminRole.name}`);
   console.log(`  Staff role: ${staffRole.name}`);
   console.log(`  Admin user: ${adminEmail}`);
-  console.log(`  NOTE: No fake business customers, invoices, or provider data created.`);
+  if (process.env.SEED_PORTAL_DEMO !== 'true') {
+    console.log(`  NOTE: Set SEED_PORTAL_DEMO=true to create portal demo data.`);
+  }
 }
 
 main()

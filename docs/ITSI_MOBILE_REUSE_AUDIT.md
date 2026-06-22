@@ -243,3 +243,22 @@
 - All portal API responses scoped to `request.accessContext.accountId`
 - Quick actions are customer self-service only (view services, raise ticket, manage SIMs) — never staff operations (create invoice, run dunning, new customer)
 - Placeholder pages must not show fake/demo account data (Acme Corporation, static MRR, etc.)
+
+---
+
+## Phase 9B — Business customer portal foundation reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Portal login + session | **Reuse** | `AuthProvider`, `LoginPage` with customer footer; `PortalAuthGuard` enforces portal realm | Staff login unchanged |
+| Account dashboard | **Refocus** | Live KPIs from `/api/v1/portal/dashboard`; recent invoices/tickets panels | Platform MRR / AI insights |
+| Service list by type | **Reuse** | `/services` table view for mobile/broadband/energy | Staff provisioning controls |
+| Product/plan cards | **Refocus** | `/products` from ACTIVE catalogue; retail + setup fee only | Wholesale cost, margin policy |
+| Invoice list/detail | **Reuse** | `/billing`, `/billing/[id]`; balance due; disabled pay/PDF | DRAFT/VOID invoices |
+| Ticket create + threads | **Reuse** | POST ticket, GET detail, POST reply; customer-visible threads only | Internal notes, escalation refs |
+| Fleet/SIM table | **Refocus** | `/fleet` read-only; disabled SIM swap/spend cap | Provider provisioning APIs |
+| Portal user invite | **Refocus** | POST `/api/v1/portal/users` scoped to account | Staff roles, platform admin |
+| Contact details edit | **Reuse** | PATCH `/api/v1/portal/account/contact-details` (own name) | Company profile edit (disabled) |
+| Consumer signup | **Skip (hard excluded)** | Not implemented | Hard excluded |
+| Online payment / PDF | **Skip (deferred)** | Disabled with clear reason | Phase 10+ |
+| Wholesale order from portal | **Skip (deferred)** | Phase 10 staff workflow | Phase 10 |

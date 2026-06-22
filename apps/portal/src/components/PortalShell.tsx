@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { PORTAL_WIRING } from '@itsi-business/staff-shell';
+import { PORTAL_WIRING, useAuth } from '@itsi-business/staff-shell';
 
 export function PortalShell({
   children,
@@ -15,6 +15,11 @@ export function PortalShell({
 }) {
   const pathname = usePathname();
   const nav = PORTAL_WIRING.navLinks;
+  const { user, logout } = useAuth();
+
+  const initials = user
+    ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? user.email[0]}`.toUpperCase()
+    : '?';
 
   return (
     <div className="command-shell">
@@ -37,16 +42,14 @@ export function PortalShell({
           return (
             <Link
               key={item.href}
-              href={item.enabled ? item.href : '#'}
-              aria-disabled={!item.enabled}
-              title={item.comingSoonReason ?? item.label}
+              href={item.href}
+              title={item.label}
               style={{
                 width: 36, height: 36, borderRadius: 10,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: active ? 'rgb(var(--accent))' : 'transparent',
                 color: active ? 'rgb(var(--accent-foreground))' : 'rgb(var(--muted))',
                 textDecoration: 'none', fontSize: '0.9rem', lineHeight: 1,
-                opacity: item.enabled ? 1 : 0.5,
                 flexShrink: 0,
               }}
               className="nav-item"
@@ -56,6 +59,30 @@ export function PortalShell({
             </Link>
           );
         })}
+
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div
+            title={user?.email}
+            style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'rgb(var(--brand-navy))', color: 'rgb(var(--foreground))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.65rem', fontWeight: 700,
+            }}
+          >
+            {initials}
+          </div>
+          <button
+            type="button"
+            onClick={() => logout()}
+            style={{
+              fontSize: '0.55rem', color: 'rgb(var(--muted))', background: 'none',
+              border: 'none', cursor: 'pointer', padding: 0,
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </aside>
 
       <div className="command-main">

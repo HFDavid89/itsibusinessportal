@@ -7,9 +7,10 @@ interface LoginPageProps {
   appName: string;
   onSuccess?: () => void;
   redirectTo?: string;
+  footerText?: string;
 }
 
-export function LoginPage({ appName, onSuccess, redirectTo = '/' }: LoginPageProps) {
+export function LoginPage({ appName, onSuccess, redirectTo = '/', footerText = 'Itsi Business — Staff Access Only' }: LoginPageProps) {
   const { login, user, loading } = useAuth();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -157,7 +158,7 @@ export function LoginPage({ appName, onSuccess, redirectTo = '/' }: LoginPagePro
         </div>
 
         <p style={{ textAlign: 'center', color: 'rgb(148 163 184)', fontSize: '0.7rem', marginTop: '1.25rem' }}>
-          Itsi Business — Staff Access Only
+          {footerText}
         </p>
       </div>
     </div>

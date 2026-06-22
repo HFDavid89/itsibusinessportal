@@ -118,7 +118,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   roles: string[];
-  realm: 'platform' | 'staff';
+  realm: 'platform' | 'staff' | 'portal';
+  accountId?: string;
 }
 
 export async function bootstrapSession(): Promise<AuthUser | null> {
@@ -135,6 +136,7 @@ export async function bootstrapSession(): Promise<AuthUser | null> {
       lastName: u.lastName ?? '',
       roles: u.roles ?? [],
       realm: u.realm ?? 'staff',
+      accountId: u.accountId,
     };
   } catch {
     return null;
@@ -161,7 +163,8 @@ export async function login(email: string, password: string) {
     firstName: u.firstName ?? '',
     lastName: u.lastName ?? '',
     roles: u.roles ?? [],
-    realm: (u.realm ?? 'staff') as 'platform' | 'staff',
+    realm: (u.realm ?? 'staff') as AuthUser['realm'],
+    accountId: u.accountId,
   };
   return { accessToken: token, user: authUser };
 }
