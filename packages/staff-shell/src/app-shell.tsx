@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isExternalHref, WORKSPACE_URLS } from './workspace-urls';
@@ -210,10 +210,32 @@ export function AppShell({
   brand,
   children,
   workspace,
+  loginPath = '/login',
 }: AppShellProps) {
   const allItems = navGroups.flatMap((g) => g.items);
   const monogram = brand.monogram ?? (brand.badge ?? brand.name).slice(0, 2).toUpperCase();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      window.location.href = loginPath;
+    }
+  }, [user, loading, loginPath]);
+
+  if (loading || !user) {
+    return (
+      <div style={{
+        ...S.shell,
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'rgb(148 163 184)',
+        fontSize: '0.875rem',
+      }}
+      >
+        {loading ? 'Loading…' : 'Redirecting to sign in…'}
+      </div>
+    );
+  }
 
   const initials = user
     ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || user.email[0].toUpperCase()

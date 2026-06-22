@@ -1,10 +1,9 @@
 /**
  * Typed CRM API client for Itsi Business.
  * Wraps the Itsi Business API at /api/v1/accounts/*.
- * No Itsi Mobile, Gamma, KCOM, MS3, or provider calls here.
+ * Uses shared staff-shell transport so Bearer token + session cookie are sent.
  */
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001';
+import { apiFetch } from '@itsi-business/staff-shell';
 
 // ── Domain types ──────────────────────────────────────────────────────────────
 
@@ -149,28 +148,6 @@ export interface CreateSiteInput {
   isPrimary?: boolean;
 }
 
-// ── Fetch wrapper ─────────────────────────────────────────────────────────────
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers ?? {}),
-    },
-  });
-
-  const json = await res.json();
-
-  if (!res.ok) {
-    const err = (json as ApiError).error;
-    throw new Error(err?.message ?? `HTTP ${res.status}`);
-  }
-
-  return json as T;
-}
-
 // ── CRM API ───────────────────────────────────────────────────────────────────
 
 export const crmApi = {
@@ -191,13 +168,13 @@ export const crmApi = {
   createAccount: (data: CreateAccountInput) =>
     apiFetch<ApiResponse<BusinessAccount>>('/api/v1/accounts', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   updateAccount: (id: string, data: Partial<CreateAccountInput>) =>
     apiFetch<ApiResponse<BusinessAccount>>(`/api/v1/accounts/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   // Contacts
@@ -207,13 +184,13 @@ export const crmApi = {
   createContact: (accountId: string, data: CreateContactInput) =>
     apiFetch<ApiResponse<BusinessContact>>(`/api/v1/accounts/${accountId}/contacts`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   updateContact: (accountId: string, contactId: string, data: Partial<CreateContactInput>) =>
     apiFetch<ApiResponse<BusinessContact>>(`/api/v1/accounts/${accountId}/contacts/${contactId}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   // Sites
@@ -223,13 +200,13 @@ export const crmApi = {
   createSite: (accountId: string, data: CreateSiteInput) =>
     apiFetch<ApiResponse<BusinessSite>>(`/api/v1/accounts/${accountId}/sites`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   updateSite: (accountId: string, siteId: string, data: Partial<CreateSiteInput>) =>
     apiFetch<ApiResponse<BusinessSite>>(`/api/v1/accounts/${accountId}/sites/${siteId}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: data,
     }),
 
   // Invoices for account
@@ -265,7 +242,7 @@ export const crmApi = {
     apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/mark-referred`, { method: 'POST' }),
 
   completeEnergyCheckIn: (id: string) =>
-    apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/check-ins`, { method: 'POST', body: JSON.stringify({}) }),
+    apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/check-ins`, { method: 'POST', body: {} }),
 
   markEnergyLost: (id: string) =>
     apiFetch<ApiResponse<EnergyRecord>>(`/api/v1/services/energy/${id}/mark-lost`, { method: 'POST' }),

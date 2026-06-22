@@ -124,7 +124,11 @@ export interface AuthUser {
 
 export async function bootstrapSession(): Promise<AuthUser | null> {
   try {
-    const res = await fetch(`${API_URL}/api/v1/auth/me`, { credentials: 'include' });
+    const token = getAccessToken();
+    const res = await fetch(`${API_URL}/api/v1/auth/me`, {
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     if (!res.ok) return null;
     const json = await res.json();
     const u = json?.data;

@@ -7,6 +7,17 @@ import { requireAuth } from '../middleware/authenticate';
 const COOKIE_NAME = 'itsi_biz_token';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+function sessionCookieOptions(maxAge: number) {
+  return {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: 'lax' as const,
+    path: '/',
+    maxAge,
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
+  };
+}
+
 const LoginSchema = z.object({
   email:    z.string().email(),
   password: z.string().min(1),
@@ -55,13 +66,7 @@ export async function authRoutes(app: FastifyInstance) {
       }
 
       const token = makeToken(staffUser);
-      reply.setCookie(COOKIE_NAME, token, {
-        httpOnly: true,
-        secure:   IS_PROD,
-        sameSite: 'lax',
-        path:     '/',
-        maxAge:   8 * 60 * 60,
-      });
+      reply.setCookie(COOKIE_NAME, token, sessionCookieOptions(8 * 60 * 60));
 
       return reply.send({
         success: true,
@@ -95,13 +100,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const token = makeToken({ ...portalUser, roles: [] });
 
-    reply.setCookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure:   IS_PROD,
-      sameSite: 'lax',
-      path:     '/',
-      maxAge:   8 * 60 * 60,
-    });
+    reply.setCookie(COOKIE_NAME, token, sessionCookieOptions(8 * 60 * 60));
 
     return reply.send({
       success: true,

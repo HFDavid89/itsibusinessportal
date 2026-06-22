@@ -201,7 +201,7 @@ async function main() {
       passwordHash: await bcrypt.hash(adminPassword, 12),
       firstName: 'Platform',
       lastName: 'Admin',
-      realm: 'staff',
+      realm: 'platform',
       roles: { connect: [{ id: adminRole.id }] },
     },
   });
