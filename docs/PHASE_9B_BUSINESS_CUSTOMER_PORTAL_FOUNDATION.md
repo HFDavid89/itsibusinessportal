@@ -88,6 +88,8 @@ SEED_PORTAL_DEMO=true pnpm db:seed
 
 Creates demo account `DEMO-0001`, portal user (`SEED_PORTAL_EMAIL`, default `portal@demo.itsi.business`), sample services, invoice, and ticket.
 
+**Production warning:** Never set `SEED_PORTAL_DEMO=true` in production or any shared/staging environment. The seed creates a known demo password (`ChangeMe123!` by default) and must remain local-only.
+
 ## Reused Itsi Mobile patterns
 
 - Cookie + JWT auth with realm separation

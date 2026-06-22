@@ -234,7 +234,7 @@
 | Consumer signup / residential onboarding | **Skip (hard excluded)** | Not copied. Business portal is invite/login only. | Hard excluded |
 | Residential usage rating / consumer SIM ordering | **Skip (hard excluded)** | Belongs to Itsi Mobile consumer flows. | Hard excluded |
 | Multi-tenant reseller portal patterns | **Skip (hard excluded)** | Itsi Business is single business-customer per deployment. | Hard excluded |
-| Wholesale order request from service record | **Skip (deferred)** | Renamed to **Phase 10**. Not built until portal boundary is complete. | Phase 10 |
+| Wholesale order request from service record | **Skip (deferred)** | Renamed to **Phase 10**. Not built until portal boundary is complete. | Phase 10 — **implemented** |
 | Shared wiring registry | **New** | `packages/staff-shell/src/wiring-registry.ts` + `nav-config.ts` + `scripts/check-wiring.mjs`. | — |
 
 ### Business-customer-specific (must remain)
@@ -260,5 +260,22 @@
 | Portal user invite | **Refocus** | POST `/api/v1/portal/users` scoped to account | Staff roles, platform admin |
 | Contact details edit | **Reuse** | PATCH `/api/v1/portal/account/contact-details` (own name) | Company profile edit (disabled) |
 | Consumer signup | **Skip (hard excluded)** | Not implemented | Hard excluded |
-| Online payment / PDF | **Skip (deferred)** | Disabled with clear reason | Phase 10+ |
-| Wholesale order from portal | **Skip (deferred)** | Phase 10 staff workflow | Phase 10 |
+| Online payment / PDF | **Skip (deferred)** | Disabled with clear reason | Phase 11+ |
+| Wholesale order from portal | **Skip (hard excluded)** | Phase 10 staff workflow only — portal shows customer-safe status only | Hard excluded |
+
+---
+
+## Phase 10 — Wholesale order request reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Service order request flow | **Refocus** | `requestWholesaleOrderForService()` via bridge `createOrder()` — staff-only on retail records | Direct provider order APIs |
+| Order status polling | **Refocus** | `refreshWholesaleStatusForService()` via bridge `getOrderStatus()` | Provider status webhooks |
+| Status timeline events | **Reuse** | `WHOLESALE_ORDER_REQUESTED`, `WHOLESALE_STATUS_REFRESHED`, `SERVICE_STATUS_UPDATED` | Provider-internal events |
+| Order reference display | **Refocus** | Show `itsiMobileWholesaleOrderId`, `itsiMobileServiceOrderId`, `safeProviderReference` only | Raw Gamma/KCOM/MS3 refs |
+| Validation / error handling | **Reuse** | Zod body schema, lifecycle guards, `handleWholesaleOrderError()` mapping | Provider-specific error codes |
+| Retry / circuit-breaker UI | **Refocus** | Disabled buttons + API error codes (`WHOLESALE_DISABLED`, `CIRCUIT_OPEN`, `WHOLESALE_CONFIG_ERROR`) | Provider retry logic |
+| Confirmation modal | **Reuse** | `confirm: true` required — same explicit-submit pattern | Consumer self-order |
+| Energy wholesale | **Skip (deferred)** | Disabled panel in UI | Phase 11+ |
+| Portal wholesale actions | **Skip (hard excluded)** | No portal routes or buttons | Hard excluded |
+| Auto retail+wholesale create | **Skip (hard excluded)** | Two-step: retail record first, then staff request | Hard excluded |

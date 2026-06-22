@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '@itsi-business/staff-shell';
 import { servicesApi, money, fmt, type AnyService, type BusinessMobileService, type BusinessBroadbandService, type BusinessEnergyService } from '../../../lib/api';
+import { WholesaleFulfilmentPanel } from '../../../components/WholesaleFulfilmentPanel';
 
 const NAV_GROUPS = [
   { label: 'Services', items: [
@@ -186,16 +187,14 @@ export default function ServiceDetailPage() {
           </div>
         ); })()}
 
-        {/* Wholesale link */}
-        {(svc._serviceType === 'MOBILE' || svc._serviceType === 'BROADBAND') && m.wholesaleLink && (
-          <div className="bg-surface border border-border rounded-2xl p-4 space-y-1">
-            <p className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Wholesale Link Placeholder</p>
-            <p className="text-xs text-foreground">Status: <strong>{m.wholesaleLink.status}</strong></p>
-            {m.wholesaleLink.itsiMobileWholesaleOrderId && (
-              <p className="text-xs text-muted font-mono">Order ID: {m.wholesaleLink.itsiMobileWholesaleOrderId}</p>
-            )}
-          </div>
-        )}
+        {/* Wholesale fulfilment */}
+        <WholesaleFulfilmentPanel
+          serviceId={id}
+          serviceType={svc._serviceType}
+          serviceStatus={svc.status}
+          wholesaleLink={m.wholesaleLink}
+          onUpdated={(updated) => setSvc(updated)}
+        />
 
         {/* Edit form */}
         {editing && (

@@ -66,8 +66,24 @@ export interface ItsiMobileWholesaleServiceLink {
   safeProviderReference:      string | null;
   status:                     WholesaleLinkStatus;
   lastSyncedAt:               string | null;
+  lastStatusCheckedAt:        string | null;
   createdAt:                  string;
   updatedAt:                  string;
+}
+
+export interface WholesaleStatusResponse {
+  service: AnyService;
+  wholesaleLink: ItsiMobileWholesaleServiceLink | null;
+  wholesaleEnabled: boolean;
+}
+
+export interface RequestWholesaleOrderInput {
+  quoteId?: string;
+  productCode?: string;
+  contactName?: string;
+  contactPhone?: string;
+  notes?: string;
+  confirm: true;
 }
 
 export interface BusinessMobileService {
@@ -336,5 +352,20 @@ export const servicesApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+    }),
+
+  getWholesaleStatus: (serviceType: 'mobile' | 'broadband', serviceId: string) =>
+    apiFetch<{ success: true; data: WholesaleStatusResponse }>(`/api/v1/services/${serviceType}/${serviceId}/wholesale-status`),
+
+  requestWholesaleOrder: (serviceType: 'mobile' | 'broadband', serviceId: string, body: RequestWholesaleOrderInput) =>
+    apiFetch<{ success: true; data: AnyService }>(`/api/v1/services/${serviceType}/${serviceId}/request-wholesale-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+
+  refreshWholesaleStatus: (serviceType: 'mobile' | 'broadband', serviceId: string) =>
+    apiFetch<{ success: true; data: AnyService }>(`/api/v1/services/${serviceType}/${serviceId}/refresh-wholesale-status`, {
+      method: 'POST',
     }),
 };

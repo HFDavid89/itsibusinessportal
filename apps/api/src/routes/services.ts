@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@itsi-business/database';
 import { requirePermission } from '../middleware/rbac';
+import { registerWholesaleOrderRoutes } from './services-wholesale';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -110,6 +111,9 @@ export async function serviceRoutes(app: FastifyInstance) {
   const writeGuard         = requirePermission('services.records.write');
   const wlReadGuard        = requirePermission('services.wholesale_links.read');
   const wlWriteGuard       = requirePermission('services.wholesale_links.write');
+
+  // Phase 10 — wholesale order routes (must register before /:id catch-all patterns)
+  registerWholesaleOrderRoutes(app);
 
   // ── GET /api/v1/services — aggregate list ─────────────────────────────────
   app.get('/', { preHandler: [readGuard] }, async (req: any, reply: any) => {
