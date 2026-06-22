@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { StatusPill } from '@itsi-business/ui';
 import { PortalPage, Panel, EmptyState } from '../../components/PortalPage';
 import { portalApi, fmtPence, type PortalServiceItem } from '../../lib/api';
@@ -19,16 +20,25 @@ function ServiceTable({ title, items }: { title: string; items: PortalServiceIte
               <th>Status</th>
               <th>Site</th>
               <th>Price</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {items.map((s) => (
               <tr key={s.id} style={{ borderTop: '1px solid rgb(var(--border))' }}>
-                <td style={{ padding: '0.5rem 0' }}>{s.displayName}</td>
+                <td style={{ padding: '0.5rem 0' }}>
+                  <Link href={`/services/${s.id}`} style={{ fontWeight: 600, color: 'inherit', textDecoration: 'none' }}>{s.displayName}</Link>
+                </td>
                 <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{s.serviceReference}</td>
                 <td><StatusPill tone={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.statusLabel ?? s.status}</StatusPill></td>
                 <td>{s.site?.name ?? '—'}</td>
                 <td>{s.retailPricePence != null ? fmtPence(s.retailPricePence) : s.type === 'ENERGY' ? (s.supplierName ?? '—') : '—'}</td>
+                <td>
+                  <Link href={`/services/${s.id}`} style={{ fontSize: '0.7rem', fontWeight: 600 }}>View</Link>
+                  {s.type === 'MOBILE' && (
+                    <> · <Link href={`/fleet/${s.id}`} style={{ fontSize: '0.7rem', fontWeight: 600 }}>SIM</Link></>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

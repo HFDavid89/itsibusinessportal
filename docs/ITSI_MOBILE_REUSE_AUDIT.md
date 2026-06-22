@@ -308,3 +308,25 @@
 | Fidelity API client (Phase 11) | **Deferred indefinitely** | Readiness files kept; manual Fidelity portal workflow | Live API integration |
 | Energy billing | **Skip (hard excluded)** | Not in Itsi Business | Hard excluded |
 | Itsi Mobile energy wholesale | **Skip (hard excluded)** | Energy is not Itsi Mobile wholesale | Hard excluded |
+
+---
+
+## Phase 13 — Portal product and fleet controls reuse decisions
+
+| Source (Itsi Mobile Portal) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| Product/plan card layout | **Refocus** | Portal `/products` cards — retail price, term, enquiry CTA | SKU, wholesale cost, margin |
+| Service detail layout | **Refocus** | `/services/[id]` — customer-safe fields + ticket CTA | Provider refs, wholesale diagnostics |
+| SIM/fleet list layout | **Refocus** | `/fleet` table with filters, counts, detail links | Live network controls |
+| SIM status display | **Reuse** | `toPortalStatusLabel()` from `@itsi-business/core` | Raw upstream status |
+| Cost centre / label edit | **Refocus** | `PATCH /api/v1/portal/fleet/:id` — `simLabel`, `costCentre` only | Bar/unbar, swap, PAC, tariff |
+| Invoice/service cross-links | **Refocus** | `businessServiceReference` → service display name | Wholesale cost on lines |
+| Customer support request modal | **Refocus** | `RequestSupportModal` — ticket creation | Internal threads, escalation |
+| Disabled-action patterns | **Reuse** | `DisabledAction` + network control placeholders | Residential self-provision flows |
+| Mobile fleet management UX | **Refocus** | Search, filter, detail page, metadata edit | Provider SIM provisioning |
+| Consumer product ordering | **Skip (hard excluded)** | Enquiry ticket only | Wholesale order create |
+| Residential usage/rating | **Skip (hard excluded)** | Not exposed | Hard excluded |
+| Provider SIM controls | **Skip (staff-only)** | Disabled in portal with support CTA | Live API |
+| Staff/platform roles | **Skip (hard excluded)** | Separate `portalRole` field | Staff RBAC reuse |
+| Fidelity energy ordering | **Skip (hard excluded)** | Energy review ticket only | Fidelity API |
+| Itsi Mobile wholesale bridge | **Skip (staff-only)** | Staff services app only | Portal wholesale URLs |

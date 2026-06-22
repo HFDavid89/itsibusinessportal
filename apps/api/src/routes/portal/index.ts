@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@itsi-business/database';
 import { hashPassword } from '@itsi-business/auth';
@@ -12,6 +12,8 @@ import {
 } from './helpers';
 import { CUSTOMER_INVOICE_STATUSES, OPEN_TICKET_STATUSES, balanceDuePence, toPortalStatusLabel } from './constants';
 import { toPortalEnergyStatusLabel } from '@itsi-business/core';
+import { registerPortalPhase13Routes, PortalRoleSchema } from './portal-phase13';
+import { resolveServiceDisplayNames } from '../../services/portal/portal-service-detail';
 
 const VALID_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 const VALID_CATEGORIES = ['GENERAL', 'BILLING', 'MOBILE', 'BROADBAND', 'ENERGY', 'SOFTWARE', 'ACCOUNT'] as const;
@@ -38,20 +40,34 @@ const CreatePortalUserSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName:  z.string().min(1).max(100),
   password:  z.string().min(8).max(200),
+  portalRole: PortalRoleSchema.optional(),
 });
 
 const PatchPortalUserSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName:  z.string().min(1).max(100).optional(),
   isActive:  z.boolean().optional(),
+  portalRole: PortalRoleSchema.optional(),
 }).refine((d) => Object.keys(d).length > 0, { message: 'At least one field required' });
+
+async function assertPortalAdmin(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  const user = await prisma.portalUser.findUnique({
+    where: { id: getPortalUserId(request) },
+    select: { portalRole: true },
+  });
+  if (user?.portalRole !== 'ACCOUNT_ADMIN') {
+    reply.code(403).send({ success: false, error: { code: 'FORBIDDEN', message: 'Account admin role required' } });
+    return false;
+  }
+  return true;
+}
 
 function genTicketNumber(): string {
   return `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
 const PORTAL_USER_SELECT = {
-  id: true, email: true, firstName: true, lastName: true, realm: true, isActive: true, createdAt: true,
+  id: true, email: true, firstName: true, lastName: true, realm: true, portalRole: true, isActive: true, createdAt: true,
 } as const;
 
 export async function portalRoutes(app: FastifyInstance) {
@@ -222,16 +238,19 @@ export async function portalRoutes(app: FastifyInstance) {
     if (!accountId) return;
 
     const products = await prisma.businessServiceCatalogueItem.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', customerVisible: true },
       select: {
-        id: true, sku: true, name: true, description: true, serviceType: true,
-        retailPricePence: true, setupFeePence: true, contractTermMonths: true, taxRate: true,
+        id: true, name: true, description: true, serviceType: true,
+        retailPricePence: true, setupFeePence: true, contractTermMonths: true,
       },
       orderBy: [{ serviceType: 'asc' }, { name: 'asc' }],
       take: 200,
     });
 
-    return reply.send({ success: true, data: products });
+    return reply.send({
+      success: true,
+      data: products.map((p) => ({ ...p, availability: 'AVAILABLE' })),
+    });
   });
 
   // ── GET /api/v1/portal/services ───────────────────────────────────────────
@@ -347,6 +366,7 @@ export async function portalRoutes(app: FastifyInstance) {
             id: true, description: true, serviceType: true, quantity: true,
             unitPricePence: true, discountAmountPence: true, taxRate: true,
             netAmountPence: true, taxAmountPence: true, grossAmountPence: true,
+            businessServiceReference: true,
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -357,11 +377,20 @@ export async function portalRoutes(app: FastifyInstance) {
       return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Invoice not found' } });
     }
 
+    const refs = invoice.lines.map((l) => l.businessServiceReference).filter((r): r is string => !!r);
+    const serviceNames = await resolveServiceDisplayNames(accountId, refs);
+
     return reply.send({
       success: true,
       data: {
         ...invoice,
         balanceDuePence: balanceDuePence(invoice.totalPence, invoice.amountPaidPence),
+        lines: invoice.lines.map((line) => ({
+          ...line,
+          serviceLink: line.businessServiceReference
+            ? (serviceNames[line.businessServiceReference] ?? null)
+            : null,
+        })),
       },
     });
   });
@@ -559,6 +588,9 @@ export async function portalRoutes(app: FastifyInstance) {
       return reply.code(422).send({ success: false, error: { code: 'VALIDATION_ERROR', message: parsed.error.errors[0]?.message } });
     }
 
+    const role = parsed.data.portalRole ?? 'READ_ONLY';
+    if (role !== 'READ_ONLY' && !(await assertPortalAdmin(request, reply))) return;
+
     const { email, firstName, lastName, password } = parsed.data;
     const existing = await prisma.portalUser.findUnique({ where: { email: email.toLowerCase() }, select: { id: true } });
     if (existing) {
@@ -573,6 +605,7 @@ export async function portalRoutes(app: FastifyInstance) {
         lastName,
         passwordHash: await hashPassword(password),
         realm: 'portal',
+        portalRole: role,
       },
       select: PORTAL_USER_SELECT,
     });
@@ -593,8 +626,28 @@ export async function portalRoutes(app: FastifyInstance) {
       return reply.code(422).send({ success: false, error: { code: 'VALIDATION_ERROR', message: parsed.error.errors[0]?.message } });
     }
 
+    if (parsed.data.portalRole !== undefined && !(await assertPortalAdmin(request, reply))) return;
+
     if (parsed.data.isActive === false && id === getPortalUserId(request)) {
       return reply.code(400).send({ success: false, error: { code: 'SELF_DEACTIVATE', message: 'Cannot deactivate your own account' } });
+    }
+
+    if (parsed.data.isActive === false || (parsed.data.portalRole && parsed.data.portalRole !== 'ACCOUNT_ADMIN')) {
+      const target = await prisma.portalUser.findFirst({
+        where: { id, accountId },
+        select: { portalRole: true, isActive: true },
+      });
+      if (target?.portalRole === 'ACCOUNT_ADMIN' && target.isActive) {
+        const otherActiveAdmins = await prisma.portalUser.count({
+          where: { accountId, portalRole: 'ACCOUNT_ADMIN', isActive: true, id: { not: id } },
+        });
+        if (otherActiveAdmins === 0) {
+          return reply.code(400).send({
+            success: false,
+            error: { code: 'LAST_ADMIN', message: 'Cannot remove or deactivate the last active account admin' },
+          });
+        }
+      }
     }
 
     const user = await prisma.portalUser.update({
@@ -605,4 +658,6 @@ export async function portalRoutes(app: FastifyInstance) {
 
     return reply.send({ success: true, data: user });
   });
+
+  registerPortalPhase13Routes(app);
 }

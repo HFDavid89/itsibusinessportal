@@ -28,7 +28,7 @@ async function seedPortalDemo() {
 
   await prisma.portalUser.upsert({
     where: { email: portalEmail },
-    update: {},
+    update: { portalRole: 'ACCOUNT_ADMIN' },
     create: {
       accountId: account.id,
       email: portalEmail,
@@ -36,6 +36,7 @@ async function seedPortalDemo() {
       lastName: 'User',
       passwordHash: await bcrypt.hash(portalPassword, 12),
       realm: 'portal',
+      portalRole: 'ACCOUNT_ADMIN',
     },
   });
 
@@ -71,7 +72,7 @@ async function seedPortalDemo() {
 
   const catalogue = await prisma.businessServiceCatalogueItem.upsert({
     where: { sku: 'DEMO-MOB-001' },
-    update: {},
+    update: { customerVisible: true },
     create: {
       sku: 'DEMO-MOB-001',
       name: 'Business Mobile 20GB',
@@ -82,6 +83,7 @@ async function seedPortalDemo() {
       setupFeePence: 0,
       contractTermMonths: 24,
       taxRate: 20,
+      customerVisible: true,
     },
   });
 

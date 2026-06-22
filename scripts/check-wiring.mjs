@@ -22,6 +22,15 @@ const STAFF_WORKSPACE_PATTERNS = [
   /NEXT_PUBLIC_(ADMIN|CRM|BILLING|DESK|SERVICES)_URL/,
 ];
 
+const PORTAL_FORBIDDEN_URL_PATTERNS = [
+  /\/api\/v1\/wholesale\b/,
+  /\/api\/v1\/services\/wholesale\b/,
+  /\/api\/v1\/energy\/fidelity\b/,
+  /\/api\/v1\/admin\b/,
+  /\/api\/v1\/platform\b/,
+  /itsi-mobile-wholesale/i,
+];
+
 const SKIP_DIRS = new Set(['node_modules', '.next', 'dist', '.turbo']);
 
 function walk(dir, files = []) {
@@ -47,6 +56,12 @@ function scanFile(path) {
         break;
       }
     }
+    for (const pat of PORTAL_FORBIDDEN_URL_PATTERNS) {
+      if (pat.test(text)) {
+        issues.push({ kind: 'portal-forbidden-api', detail: `Portal app references staff/wholesale API pattern: ${pat}` });
+        break;
+      }
+    }
   }
 
   const buttonRe = /<button\b[^>]*>[\s\S]*?<\/button>/gi;
@@ -66,7 +81,7 @@ function scanFile(path) {
 const files = walk(APPS_DIR);
 const findings = files.map(scanFile).filter(Boolean);
 
-console.log('Phase 9A Wiring Scan\n');
+console.log('Phase 13 Portal Wiring Scan\n');
 
 if (findings.length === 0) {
   console.log('No issues flagged.');

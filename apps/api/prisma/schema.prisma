@@ -50,6 +50,7 @@ model PortalUser {
   firstName    String
   lastName     String
   realm        String        @default("portal")
+  portalRole   String        @default("READ_ONLY") // ACCOUNT_ADMIN | BILLING_CONTACT | TECHNICAL_CONTACT | READ_ONLY
   isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -272,6 +273,7 @@ model BusinessServiceCatalogueItem {
   contractTermMonths         Int?
   taxRate                    Float    @default(20.0)
   marginPolicy               String?
+  customerVisible            Boolean  @default(false)
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 

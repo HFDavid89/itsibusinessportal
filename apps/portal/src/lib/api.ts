@@ -36,9 +36,12 @@ export interface PortalUser {
   firstName: string;
   lastName: string;
   realm: string;
+  portalRole?: string;
   isActive: boolean;
   createdAt?: string;
 }
+
+export type PortalRole = 'ACCOUNT_ADMIN' | 'BILLING_CONTACT' | 'TECHNICAL_CONTACT' | 'READ_ONLY';
 
 export interface PortalMe {
   user: PortalUser;
@@ -83,6 +86,8 @@ export interface PortalInvoiceDetail extends PortalInvoiceSummary {
     quantity: number;
     unitPricePence: number;
     grossAmountPence: number;
+    businessServiceReference?: string | null;
+    serviceLink?: { displayName: string; serviceId: string; serviceType: string } | null;
   }>;
 }
 
@@ -104,14 +109,13 @@ export interface PortalTicketDetail extends PortalTicketSummary {
 
 export interface PortalProduct {
   id: string;
-  sku: string;
   name: string;
   description: string | null;
   serviceType: string;
   retailPricePence: number;
   setupFeePence: number | null;
   contractTermMonths: number | null;
-  taxRate: number;
+  availability?: string;
 }
 
 export interface PortalServiceItem {
@@ -148,6 +152,36 @@ export interface PortalFleetItem {
   simLabel: string | null;
   costCentre: string | null;
   retailPricePence: number;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
+}
+
+export interface PortalRelatedInvoice {
+  lineId: string;
+  description: string;
+  grossAmountPence: number;
+  invoiceId: string;
+  invoiceNumber: string;
+  invoiceStatus: string;
+  issueDate: string | null;
+}
+
+export interface PortalServiceDetail {
+  service: PortalServiceItem & {
+    contractStartDate?: string | null;
+    energyBillingNote?: string;
+    accessTechnology?: string | null;
+    postcode?: string | null;
+    circuitLabel?: string | null;
+  };
+  relatedInvoices: PortalRelatedInvoice[];
+  relatedTickets: PortalTicketSummary[];
+}
+
+export interface PortalFleetDetail {
+  sim: PortalFleetItem;
+  relatedInvoices: PortalRelatedInvoice[];
+  relatedTickets: PortalTicketSummary[];
 }
 
 export interface PortalAccountDetail {
@@ -181,7 +215,12 @@ export const portalApi = {
   updateContactDetails: (body: { firstName: string; lastName: string }) =>
     patch<PortalUser>('/api/v1/portal/account/contact-details', body),
   products: () => get<PortalProduct[]>('/api/v1/portal/products'),
+  enquireProduct: (id: string, body: { message?: string }) =>
+    post<{ ticket: PortalTicketSummary; productName: string }>(`/api/v1/portal/products/${id}/enquiry`, body),
   services: () => get<{ mobile: PortalServiceItem[]; broadband: PortalServiceItem[]; energy: PortalServiceItem[] }>('/api/v1/portal/services'),
+  service: (id: string) => get<PortalServiceDetail>(`/api/v1/portal/services/${id}`),
+  createServiceTicket: (id: string, body: { message: string; subject?: string }) =>
+    post<{ ticket: PortalTicketSummary }>(`/api/v1/portal/services/${id}/tickets`, body),
   invoices: (params?: { status?: string }) => {
     const q = params?.status ? `?status=${encodeURIComponent(params.status)}` : '';
     return apiFetch<ApiEnvelope<PortalInvoiceSummary[]>>(`/api/v1/portal/invoices${q}`).then((r) => r);
@@ -197,9 +236,14 @@ export const portalApi = {
   replyToTicket: (id: string, body: string) =>
     post<{ id: string; body: string; createdAt: string }>(`/api/v1/portal/tickets/${id}/replies`, { body }),
   fleet: () => get<PortalFleetItem[]>('/api/v1/portal/fleet'),
+  fleetDetail: (id: string) => get<PortalFleetDetail>(`/api/v1/portal/fleet/${id}`),
+  updateFleet: (id: string, body: { simLabel?: string; costCentre?: string }) =>
+    patch<PortalFleetItem>(`/api/v1/portal/fleet/${id}`, body),
+  createFleetSupport: (id: string, body: { message: string; subject?: string }) =>
+    post<{ ticket: PortalTicketSummary }>(`/api/v1/portal/fleet/${id}/support`, body),
   users: () => get<PortalUser[]>('/api/v1/portal/users'),
-  createUser: (body: { email: string; firstName: string; lastName: string; password: string }) =>
+  createUser: (body: { email: string; firstName: string; lastName: string; password: string; portalRole?: PortalRole }) =>
     post<PortalUser>('/api/v1/portal/users', body),
-  updateUser: (id: string, body: { firstName?: string; lastName?: string; isActive?: boolean }) =>
+  updateUser: (id: string, body: { firstName?: string; lastName?: string; isActive?: boolean; portalRole?: PortalRole }) =>
     patch<PortalUser>(`/api/v1/portal/users/${id}`, body),
 };

@@ -51,6 +51,7 @@ const CreateCatalogueItemSchema = z.object({
   contractTermMonths:         z.number().int().min(0).optional(),
   taxRate:                    z.number().min(0).max(100).default(20.0),
   marginPolicy:               z.string().max(500).optional(),
+  customerVisible:            z.boolean().optional(),
 });
 
 const PatchCatalogueItemSchema = CreateCatalogueItemSchema.omit({ serviceType: true }).partial();

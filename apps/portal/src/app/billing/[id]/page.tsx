@@ -53,19 +53,35 @@ export default function InvoiceDetailPage() {
               <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'rgb(var(--muted))', fontSize: '0.65rem' }}>
-                    <th>Description</th><th>Qty</th><th>Amount</th>
+                    <th>Description</th><th>Service</th><th>Qty</th><th>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoice.lines.map((line) => (
                     <tr key={line.id} style={{ borderTop: '1px solid rgb(var(--border))' }}>
                       <td style={{ padding: '0.5rem 0' }}>{line.description}</td>
+                      <td>
+                        {line.serviceLink ? (
+                          <Link href={`/services/${line.serviceLink.serviceId}`} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'inherit' }}>
+                            {line.serviceLink.displayName}
+                          </Link>
+                        ) : line.businessServiceReference ? (
+                          <span style={{ fontSize: '0.7rem', color: 'rgb(var(--muted))', fontFamily: 'monospace' }}>{line.businessServiceReference}</span>
+                        ) : (
+                          <span style={{ fontSize: '0.7rem', color: 'rgb(var(--muted))' }}>—</span>
+                        )}
+                      </td>
                       <td>{line.quantity}</td>
                       <td>{fmtPence(line.grossAmountPence)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {invoice.lines.every((l) => !l.serviceLink && !l.businessServiceReference) && (
+                <p style={{ fontSize: '0.75rem', color: 'rgb(var(--muted))', marginTop: '0.75rem' }}>
+                  Service linkage to invoice lines coming soon where billing references are not yet recorded.
+                </p>
+              )}
             </Panel>
           </>
         )}
