@@ -1,29 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { AppShell, WORKSPACE_URLS } from '@itsi-business/staff-shell';
+import { AppShell, ADMIN_NAV_GROUPS } from '@itsi-business/staff-shell';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001';
-
-const NAV_GROUPS = [
-  {
-    label: 'Admin',
-    items: [
-      { href: '/', label: 'Overview', exactMatch: true },
-      { href: '/settings', label: 'Settings' },
-      { href: '/staff', label: 'Staff' },
-      { href: '/wholesale', label: 'Wholesale Connection' },
-    ],
-  },
-  {
-    label: 'Workspaces',
-    items: [
-      { href: WORKSPACE_URLS.crm, label: 'CRM', external: true },
-      { href: WORKSPACE_URLS.billing, label: 'Billing', external: true },
-      { href: WORKSPACE_URLS.desk, label: 'Desk', external: true },
-    ],
-  },
-];
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:17001';
 
 interface StaffUser {
   id: string;
@@ -120,7 +100,7 @@ export default function StaffManagementPage() {
   );
 
   return (
-    <AppShell navGroups={NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
+    <AppShell navGroups={ADMIN_NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
       <div className="max-w-5xl mx-auto p-6 space-y-6">
 
         {/* Header */}

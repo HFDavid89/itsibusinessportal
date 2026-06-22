@@ -6,7 +6,7 @@
 // - Removed DEV_TENANT_KEY (no reseller impersonation)
 // - Simplified login to probe platform then staff realm (same pattern)
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:17001';
 
 const TOKEN_KEY = 'itsi-biz-access-token';
 const REFRESH_KEY = 'itsi-biz-refresh-token';

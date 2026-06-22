@@ -1,0 +1,154 @@
+/**
+ * Phase 9A — Shared wiring registry for all workspaces.
+ *
+ * Every visible nav link, quick action, and route href is declared here with
+ * enabled state, required realm, and coming-soon reasons for disabled items.
+ */
+import { WORKSPACE_URLS, ADMIN_WORKSPACE_LINKS } from './workspace-urls';
+
+export type WiringRealm = 'platform' | 'staff' | 'portal';
+
+export interface WiringNavItem {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+  exactMatch?: boolean;
+  enabled: boolean;
+  requiredRealm?: WiringRealm | WiringRealm[];
+  requiredPermission?: string;
+  comingSoonReason?: string;
+}
+
+export interface WiringQuickAction {
+  label: string;
+  href?: string;
+  enabled: boolean;
+  requiredRealm?: WiringRealm | WiringRealm[];
+  requiredPermission?: string;
+  comingSoonReason?: string;
+}
+
+export interface WorkspaceWiring {
+  workspace: 'admin' | 'crm' | 'billing' | 'desk' | 'services' | 'portal';
+  navLinks: WiringNavItem[];
+  quickActions: WiringQuickAction[];
+}
+
+/** Portal-owned routes — never link to staff workspaces from the customer portal. */
+export const PORTAL_ROUTES = {
+  home: '/',
+  account: '/account',
+  products: '/products',
+  services: '/services',
+  billing: '/billing',
+  tickets: '/tickets',
+  fleet: '/fleet',
+  users: '/users',
+  settings: '/settings',
+} as const;
+
+export const ADMIN_WIRING: WorkspaceWiring = {
+  workspace: 'admin',
+  navLinks: [
+    { label: 'Overview', href: '/', icon: '⊞', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Settings', href: '/settings', icon: '⚙', enabled: true, requiredRealm: ['platform', 'staff'], comingSoonReason: 'Platform settings scaffold — full configuration in a later phase.' },
+    { label: 'Staff', href: '/staff', icon: '👤', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'admin.staff.manage' },
+    { label: 'Wholesale Connection', href: '/wholesale', icon: '🔗', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'wholesale.read' },
+    { label: 'CRM', href: WORKSPACE_URLS.crm, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Billing', href: WORKSPACE_URLS.billing, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Desk', href: WORKSPACE_URLS.desk, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Services', href: WORKSPACE_URLS.services, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Portal', href: WORKSPACE_URLS.portal, external: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+  quickActions: [
+    { label: 'Manage Staff', href: '/staff', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'admin.staff.manage' },
+    { label: 'Test Wholesale', href: '/wholesale', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'wholesale.read' },
+    { label: 'Open CRM', href: ADMIN_WORKSPACE_LINKS.crmAccounts, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Open Billing', href: ADMIN_WORKSPACE_LINKS.billingInvoices, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Open Desk', href: ADMIN_WORKSPACE_LINKS.deskTickets, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Open Services', href: ADMIN_WORKSPACE_LINKS.servicesRecords, enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+};
+
+export const CRM_WIRING: WorkspaceWiring = {
+  workspace: 'crm',
+  navLinks: [
+    { label: 'Dashboard', href: '/', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Business Accounts', href: '/accounts', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+  quickActions: [
+    { label: 'New Account', href: '/accounts/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'crm.accounts.write' },
+    { label: 'View Accounts', href: '/accounts', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+};
+
+export const BILLING_WIRING: WorkspaceWiring = {
+  workspace: 'billing',
+  navLinks: [
+    { label: 'Dashboard', href: '/', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Invoices', href: '/invoices', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+  quickActions: [
+    { label: 'New Invoice', href: '/invoices/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'billing.invoices.write' },
+    { label: 'View Invoices', href: '/invoices', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+};
+
+export const DESK_WIRING: WorkspaceWiring = {
+  workspace: 'desk',
+  navLinks: [
+    { label: 'Dashboard', href: '/', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Tickets', href: '/tickets', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+  quickActions: [
+    { label: 'New Ticket', href: '/tickets/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'desk.tickets.write' },
+    { label: 'View Tickets', href: '/tickets', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+};
+
+export const SERVICES_WIRING: WorkspaceWiring = {
+  workspace: 'services',
+  navLinks: [
+    { label: 'Dashboard', href: '/', exactMatch: true, enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Catalogue', href: '/catalogue', enabled: true, requiredRealm: ['platform', 'staff'] },
+    { label: 'Service Records', href: '/records', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+  quickActions: [
+    { label: 'Catalogue Item', href: '/catalogue/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'services.catalogue.write' },
+    { label: 'Service Record', href: '/records/new', enabled: true, requiredRealm: ['platform', 'staff'], requiredPermission: 'services.records.write' },
+    { label: 'View Records', href: '/records', enabled: true, requiredRealm: ['platform', 'staff'] },
+  ],
+};
+
+export const PORTAL_WIRING: WorkspaceWiring = {
+  workspace: 'portal',
+  navLinks: [
+    { label: 'Dashboard', href: PORTAL_ROUTES.home, icon: '💼', exactMatch: true, enabled: true, requiredRealm: 'portal' },
+    { label: 'Account', href: PORTAL_ROUTES.account, icon: '🏢', enabled: true, requiredRealm: 'portal' },
+    { label: 'Products', href: PORTAL_ROUTES.products, icon: '📦', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Product catalogue self-service — Phase 9B.' },
+    { label: 'Services', href: PORTAL_ROUTES.services, icon: '🌐', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Active service list — Phase 9B.' },
+    { label: 'Billing', href: PORTAL_ROUTES.billing, icon: '🧾', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Invoice self-service — Phase 9B.' },
+    { label: 'Tickets', href: PORTAL_ROUTES.tickets, icon: '🎫', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Support ticket self-service — Phase 9B.' },
+    { label: 'Fleet / SIMs', href: PORTAL_ROUTES.fleet, icon: '📱', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Mobile fleet management — Phase 9B.' },
+    { label: 'Users', href: PORTAL_ROUTES.users, icon: '👥', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Contact user management — Phase 9B.' },
+    { label: 'Settings', href: PORTAL_ROUTES.settings, icon: '⚙', enabled: true, requiredRealm: 'portal', comingSoonReason: 'Account settings — Phase 9B.' },
+  ],
+  quickActions: [
+    { label: 'View Services', href: PORTAL_ROUTES.services, enabled: true, requiredRealm: 'portal' },
+    { label: 'View Invoices', href: PORTAL_ROUTES.billing, enabled: true, requiredRealm: 'portal' },
+    { label: 'Raise Ticket', href: PORTAL_ROUTES.tickets, enabled: true, requiredRealm: 'portal', comingSoonReason: 'Ticket creation form — Phase 9B.' },
+    { label: 'Manage SIMs', href: PORTAL_ROUTES.fleet, enabled: true, requiredRealm: 'portal', comingSoonReason: 'Fleet management — Phase 9B.' },
+    { label: 'Manage Users', href: PORTAL_ROUTES.users, enabled: true, requiredRealm: 'portal', comingSoonReason: 'User management — Phase 9B.' },
+    { label: 'Update Account Details', href: PORTAL_ROUTES.account, enabled: true, requiredRealm: 'portal', comingSoonReason: 'Account edit form — Phase 9B.' },
+  ],
+};
+
+export const WIRING_REGISTRY: Record<WorkspaceWiring['workspace'], WorkspaceWiring> = {
+  admin: ADMIN_WIRING,
+  crm: CRM_WIRING,
+  billing: BILLING_WIRING,
+  desk: DESK_WIRING,
+  services: SERVICES_WIRING,
+  portal: PORTAL_WIRING,
+};

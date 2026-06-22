@@ -22,8 +22,9 @@ import { serviceRoutes } from './routes/services';
 import { wholesaleRoutes } from './routes/wholesale';
 import { staffUserRoutes } from './routes/staff-users';
 import { statsRoutes } from './routes/stats';
+import { portalRoutes } from './routes/portal';
 
-const PORT = parseInt(process.env.PORT ?? '4001', 10);
+const PORT = parseInt(process.env.PORT ?? '17001', 10);
 const HOST = process.env.HOST ?? '0.0.0.0';
 
 const app = Fastify({ logger: false });
@@ -43,6 +44,7 @@ async function start() {
   await app.register(wholesaleRoutes,  { prefix: '/api/v1/wholesale' });
   await app.register(staffUserRoutes,  { prefix: '/api/v1/admin/staff' });
   await app.register(statsRoutes,      { prefix: '/api/v1/stats' });
+  await app.register(portalRoutes,     { prefix: '/api/v1/portal' });
 
   try {
     await app.listen({ port: PORT, host: HOST });

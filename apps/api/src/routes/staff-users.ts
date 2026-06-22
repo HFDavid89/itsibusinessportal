@@ -5,7 +5,7 @@ import { hashPassword } from '@itsi-business/auth';
 import { requireAuth, requireRealm } from '../middleware/authenticate';
 import { requirePermission } from '../middleware/rbac';
 
-const guard = { preHandler: [requireAuth, requireRealm('staff'), requirePermission('admin.staff.manage')] };
+const guard = { preHandler: [requireAuth, requireRealm('staff', 'platform'), requirePermission('admin.staff.manage')] };
 
 const CreateStaffUserSchema = z.object({
   email:     z.string().email(),

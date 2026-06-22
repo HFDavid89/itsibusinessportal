@@ -6,6 +6,8 @@ export interface TokenPayload {
   realm: AuthRealm;
   email: string;
   roles: string[];
+  /** Portal realm: business account the contact belongs to. */
+  accountId?: string;
 }
 
 export function signToken(payload: TokenPayload, secret: string, expiresIn = '8h'): string {

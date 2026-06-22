@@ -214,3 +214,32 @@
 | Automatic order submission | **Skip (deferred)** | Orders are staff-initiated only. No auto-provisioning on service record create. | Phase 9+ |
 | Webhook ingestion from Itsi Mobile | **Skip (deferred)** | No inbound webhook handlers at this phase. | Phase 9+ |
 | Billing integration with wholesale costs | **Skip (deferred)** | Wholesale cost fields exist on catalogue items but no live cost sync. | Phase 9+ |
+
+---
+
+## Phase 9A — Wiring integrity and portal boundary reuse decisions
+
+| Source (Itsi Mobile) | Reuse decision | Action | Skipped / boundary |
+|---|---|---|---|
+| `apps/api/src/routes/portal/` — customer self-service API structure | **Refocus** | New `/api/v1/portal/*` routes scoped by `accountId`, `requireRealm('portal')`. Dashboard, services, invoices, tickets, fleet endpoints. | Staff stats never exposed to portal |
+| `apps/portal/` — customer portal shell and nav | **Refocus** | Portal-owned routes only (`/account`, `/services`, `/billing`, etc.). No links to staff workspaces. Placeholder pages until 9B. | Admin/CRM/Billing/Desk/Services staff apps |
+| Portal auth — contact login with account JWT | **Reuse** | Extended `POST /api/v1/auth/login` to authenticate `PortalUser` records; JWT carries `accountId`. | Staff login path unchanged |
+| Customer account dashboard patterns | **Refocus (9B)** | Dashboard shell uses `/api/v1/portal/dashboard` — live KPIs in 9A foundation, full 360 in 9B. | Platform-wide MRR / AI insight demo UI removed |
+| Customer service list patterns | **Refocus (9B)** | `/api/v1/portal/services` returns account-scoped records. UI placeholder at `/services`. | Staff service catalogue admin |
+| Billing / invoice self-service | **Refocus (9B)** | `/api/v1/portal/invoices` list endpoint. UI placeholder at `/billing`. | Staff invoice creation / dunning |
+| Support ticket self-service | **Refocus (9B)** | `/api/v1/portal/tickets` list endpoint. UI placeholder at `/tickets`. | Desk internal notes / assignment |
+| SIM / fleet management | **Refocus (9B)** | `/api/v1/portal/fleet` returns mobile services for account. UI placeholder at `/fleet`. | Provider SIM provisioning |
+| Plan / product display | **Refocus (9B)** | Placeholder at `/products`. | Consumer residential plans |
+| Account / contact user management | **Refocus (9B)** | Placeholder at `/users` and `/account`. | Staff CRM contact admin |
+| Consumer signup / residential onboarding | **Skip (hard excluded)** | Not copied. Business portal is invite/login only. | Hard excluded |
+| Residential usage rating / consumer SIM ordering | **Skip (hard excluded)** | Belongs to Itsi Mobile consumer flows. | Hard excluded |
+| Multi-tenant reseller portal patterns | **Skip (hard excluded)** | Itsi Business is single business-customer per deployment. | Hard excluded |
+| Wholesale order request from service record | **Skip (deferred)** | Renamed to **Phase 10**. Not built until portal boundary is complete. | Phase 10 |
+| Shared wiring registry | **New** | `packages/staff-shell/src/wiring-registry.ts` + `nav-config.ts` + `scripts/check-wiring.mjs`. | — |
+
+### Business-customer-specific (must remain)
+
+- Portal realm isolation — customers never see staff workspaces or platform totals
+- All portal API responses scoped to `request.accessContext.accountId`
+- Quick actions are customer self-service only (view services, raise ticket, manage SIMs) — never staff operations (create invoice, run dunning, new customer)
+- Placeholder pages must not show fake/demo account data (Acme Corporation, static MRR, etc.)

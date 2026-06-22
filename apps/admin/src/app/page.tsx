@@ -1,29 +1,9 @@
-import { AppShell, WORKSPACE_URLS } from '@itsi-business/staff-shell';
+import { AppShell, ADMIN_NAV_GROUPS } from '@itsi-business/staff-shell';
 import { PageHeader, Card, Badge } from '@itsi-business/ui';
-
-const navGroups = [
-  {
-    label: 'Admin',
-    items: [
-      { href: '/', label: 'Overview', exactMatch: true },
-      { href: '/settings', label: 'Settings' },
-      { href: '/staff', label: 'Staff' },
-      { href: '/wholesale', label: 'Wholesale Connection' },
-    ],
-  },
-  {
-    label: 'Workspaces',
-    items: [
-      { href: WORKSPACE_URLS.crm, label: 'CRM', external: true },
-      { href: WORKSPACE_URLS.billing, label: 'Billing', external: true },
-      { href: WORKSPACE_URLS.desk, label: 'Desk', external: true },
-    ],
-  },
-];
 
 export default function AdminOverviewPage() {
   return (
-    <AppShell navGroups={navGroups} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
+    <AppShell navGroups={ADMIN_NAV_GROUPS} brand={{ name: 'Itsi Business', badge: 'Admin' }} workspace="admin">
       <div className="p-8">
         <PageHeader
           title="Platform Overview"

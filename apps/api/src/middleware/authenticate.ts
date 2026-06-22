@@ -54,7 +54,7 @@ export async function requireAuth(
     return;
   }
   request.accessContext = {
-    userId: payload.userId,
+    userId: payload.userId ?? (payload as { sub?: string }).sub ?? '',
     email: payload.email,
     realm: payload.realm,
     roles: payload.roles ?? [],

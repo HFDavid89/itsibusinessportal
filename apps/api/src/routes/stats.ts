@@ -1,11 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@itsi-business/database';
-import { requireAuth } from '../middleware/authenticate';
+import { requireAuth, requireRealm } from '../middleware/authenticate';
 
 export async function statsRoutes(app: FastifyInstance) {
 
   // ── GET /api/v1/stats/dashboard ───────────────────────────────────────────
-  app.get('/dashboard', { preHandler: [requireAuth] }, async (_req: any, reply: any) => {
+  // Staff/platform only — never expose platform-wide totals to portal users.
+  app.get('/dashboard', { preHandler: [requireAuth, requireRealm('platform', 'staff')] }, async (_req: any, reply: any) => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 

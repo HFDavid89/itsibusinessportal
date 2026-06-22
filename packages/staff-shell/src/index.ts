@@ -1,4 +1,6 @@
 export * from './workspace-urls';
+export * from './wiring-registry';
+export * from './nav-config';
 export * from './app-shell';
 export * from './app-switcher';
 export * from './auth-context';
