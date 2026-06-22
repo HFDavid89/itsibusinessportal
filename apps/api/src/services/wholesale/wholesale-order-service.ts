@@ -103,7 +103,15 @@ async function loadMobileService(id: string) {
 async function loadBroadbandService(id: string) {
   return prisma.businessBroadbandService.findUnique({
     where: { id },
-    include: { ...SERVICE_INCLUDE, site: { select: { id: true, name: true, postcode: true } } },
+    include: {
+      ...SERVICE_INCLUDE,
+      site: {
+        select: {
+          id: true, name: true, postcode: true, uprn: true,
+          addressLine1: true, addressLine2: true, city: true,
+        },
+      },
+    },
   });
 }
 
@@ -123,37 +131,63 @@ function validateServiceForOrder(
 function buildOrderPayload(
   serviceType: ServiceType,
   service: {
+    id: string;
     accountId: string;
     serviceReference: string;
+    account?: { accountNumber: string };
     catalogueItem?: { sku: string; contractTermMonths: number | null } | null;
     postcode?: string;
     uprn?: string | null;
+    accessTechnology?: string | null;
+    site?: {
+      addressLine1: string;
+      addressLine2?: string | null;
+      city: string;
+      postcode: string;
+      uprn?: string | null;
+    };
   },
   body: z.infer<typeof RequestWholesaleOrderSchema>,
 ): MobileWholesaleOrderPayload | BroadbandWholesaleOrderPayload {
-  const shared = {
-    businessAccountId: service.accountId,
+  const productCode = body.productCode ?? service.catalogueItem?.sku;
+  const attribution = {
+    sourceOrderId: service.id,
+    sourceCustomerReference: service.account?.accountNumber ?? service.accountId,
+    sourceServiceReference: service.serviceReference,
     businessServiceReference: service.serviceReference,
     quoteId: body.quoteId,
-    productCode: body.productCode ?? service.catalogueItem?.sku,
+    productCode,
     notes: body.notes,
     contractTermMonths: service.catalogueItem?.contractTermMonths ?? undefined,
   };
 
   if (serviceType === 'MOBILE') {
-    return {
-      ...shared,
-      contactName: body.contactName,
-      contactPhone: body.contactPhone,
-    };
+    const contact = body.contactName || body.contactPhone
+      ? { name: body.contactName, phone: body.contactPhone }
+      : undefined;
+    return { ...attribution, contact };
   }
 
+  const site = service.site;
+  const postcode = service.postcode ?? site?.postcode ?? '';
+  const uprn = service.uprn ?? site?.uprn ?? undefined;
+  const installContact = body.contactName || body.contactPhone
+    ? { name: body.contactName, phone: body.contactPhone }
+    : undefined;
+
   return {
-    ...shared,
-    postcode: service.postcode!,
-    uprn: service.uprn ?? undefined,
-    installContactName: body.contactName,
-    installContactPhone: body.contactPhone,
+    ...attribution,
+    postcode,
+    uprn,
+    accessTechnology: service.accessTechnology ?? undefined,
+    installContact,
+    address: site ? {
+      line1: site.addressLine1,
+      line2: site.addressLine2 ?? undefined,
+      city: site.city,
+      postcode: site.postcode,
+      uprn: site.uprn ?? undefined,
+    } : { postcode },
   };
 }
 
@@ -316,12 +350,18 @@ export async function refreshWholesaleStatusForService(
   }
 
   const orderId = service.wholesaleLink.itsiMobileWholesaleOrderId;
-  if (!orderId) {
-    return { error: { status: 400, body: { success: false, error: { code: 'NO_ORDER_ID', message: 'Wholesale link has no Itsi Mobile order ID' } } } };
-  }
 
   const config = loadWholesaleConfig();
-  const statusResult = await itsiMobileClient.getOrderStatus(config, serviceType, orderId);
+  let statusResult;
+  try {
+    statusResult = await itsiMobileClient.getOrderStatusBySource(config, serviceType, serviceId);
+  } catch (err) {
+    if (!(err instanceof WholesaleApiError) || err.statusCode !== 404) throw err;
+    if (!orderId) {
+      return { error: { status: 404, body: { success: false, error: { code: 'NO_ORDER_ID', message: 'Wholesale order not found by source reference and link has no Itsi Mobile order ID' } } } };
+    }
+    statusResult = await itsiMobileClient.getOrderStatus(config, serviceType, orderId);
+  }
   const sanitized = sanitizeStatusResponse(statusResult);
   const linkStatus = mapWholesaleLinkStatus(statusResult.status);
   const promoteActive = shouldPromoteRetailToActive(statusResult.status, service.status);
@@ -351,7 +391,15 @@ export async function refreshWholesaleStatusForService(
         updatedService = await tx.businessBroadbandService.update({
           where: { id: serviceId },
           data,
-          include: { ...SERVICE_INCLUDE, site: { select: { id: true, name: true, postcode: true } } },
+          include: {
+            ...SERVICE_INCLUDE,
+            site: {
+              select: {
+                id: true, name: true, postcode: true, uprn: true,
+                addressLine1: true, addressLine2: true, city: true,
+              },
+            },
+          },
         });
       }
       await writeServiceLifecycleEvent(
@@ -380,7 +428,7 @@ export async function refreshWholesaleStatusForService(
         serviceId,
         serviceReference: service.serviceReference,
         businessServiceType: serviceType,
-        orderId,
+        orderId: orderId ?? undefined,
         linkId: link.id,
         previousStatus: service.status,
         newStatus: promoteActive ? 'ACTIVE' : service.status,

@@ -186,6 +186,28 @@ export async function wholesaleRoutes(app: FastifyInstance) {
   });
 
   /**
+   * GET /api/v1/wholesale/orders/mobile/by-source/:sourceOrderId/status
+   * GET /api/v1/wholesale/orders/broadband/by-source/:sourceOrderId/status
+   */
+  app.get('/orders/:family/by-source/:sourceOrderId/status', { preHandler: [requireAuth, readGuard] }, async (req: any, reply: any) => {
+    const { family, sourceOrderId } = req.params as { family: string; sourceOrderId: string };
+    const config = loadWholesaleConfig();
+    try {
+      const data = family === 'mobile'
+        ? await itsiMobileClient.getMobileOrderStatusBySource(config, sourceOrderId)
+        : family === 'broadband'
+          ? await itsiMobileClient.getBroadbandOrderStatusBySource(config, sourceOrderId)
+          : null;
+      if (!data) {
+        return reply.code(404).send({ success: false, error: { code: 'NOT_FOUND', message: 'Unknown order family' } });
+      }
+      return reply.send({ success: true, data });
+    } catch (err) {
+      handleWholesaleError(err, reply);
+    }
+  });
+
+  /**
    * GET /api/v1/wholesale/orders/mobile/:id
    * GET /api/v1/wholesale/orders/broadband/:id
    * GET /api/v1/wholesale/orders/mobile/:id/status
@@ -276,29 +298,34 @@ export async function wholesaleRoutes(app: FastifyInstance) {
       return reply.code(400).send({ success: false, error: { code: 'VALIDATION_ERROR', issues: parsed.error.flatten().fieldErrors } });
     }
     const { serviceType, ...rest } = parsed.data;
+    const sourceOrderId = rest.sourceOrderId ?? rest.businessServiceReference;
+    const sourceCustomerReference = rest.sourceCustomerReference ?? rest.businessServiceReference;
+    const attribution = {
+      sourceOrderId,
+      sourceCustomerReference,
+      sourceServiceReference: rest.businessServiceReference,
+      businessServiceReference: rest.businessServiceReference,
+      quoteId: rest.quoteId,
+      productCode: rest.productCode,
+      contractTermMonths: rest.contractTermMonths,
+      notes: rest.notes,
+    };
     try {
       const config = loadWholesaleConfig();
       const data = serviceType === 'MOBILE'
         ? await itsiMobileClient.createMobileOrder(config, {
-            businessAccountId: rest.businessAccountId,
-            businessServiceReference: rest.businessServiceReference,
-            quoteId: rest.quoteId,
-            productCode: rest.productCode,
-            contractTermMonths: rest.contractTermMonths,
-            contactName: rest.contactName,
-            contactPhone: rest.contactPhone,
-            notes: rest.notes,
+            ...attribution,
+            contact: rest.contactName || rest.contactPhone
+              ? { name: rest.contactName, phone: rest.contactPhone }
+              : undefined,
           })
         : await itsiMobileClient.createBroadbandOrder(config, {
-            businessAccountId: rest.businessAccountId,
-            businessServiceReference: rest.businessServiceReference,
-            quoteId: rest.quoteId,
+            ...attribution,
             postcode: rest.postcode!,
             uprn: rest.uprn,
-            productCode: rest.productCode,
-            installContactName: rest.contactName,
-            installContactPhone: rest.contactPhone,
-            notes: rest.notes,
+            installContact: rest.contactName || rest.contactPhone
+              ? { name: rest.contactName, phone: rest.contactPhone }
+              : undefined,
           });
       return reply.code(201).send({
         success: true,

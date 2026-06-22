@@ -12,11 +12,13 @@ import {
   orderCreatePath,
   orderGetPath,
   orderStatusPath,
+  orderBySourceStatusPath,
   productsPath,
   quotePath,
   WHOLESALE_API_PATHS,
   type WholesaleServiceFamily,
 } from './wholesale-paths';
+import { sanitizeUpstreamWholesaleBody } from './wholesale-payload-sanitize';
 
 export type { WholesaleServiceFamily };
 
@@ -76,31 +78,55 @@ export interface WholesaleQuoteResult {
   expiresAt: string;
 }
 
+export interface WholesaleContact {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface WholesalePorting {
+  pac?: string;
+  stac?: string;
+  portingDate?: string;
+}
+
+export interface WholesaleAddress {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  postcode: string;
+  uprn?: string;
+}
+
 export interface MobileWholesaleOrderPayload {
-  businessAccountId: string;
+  sourceOrderId: string;
+  sourceCustomerReference: string;
+  sourceServiceReference: string;
   businessServiceReference: string;
   quoteId?: string;
   productCode?: string;
+  tariffCode?: string;
   contractTermMonths?: number;
   simType?: string;
   simQuantity?: number;
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
+  contact?: WholesaleContact;
+  porting?: WholesalePorting;
   notes?: string;
 }
 
 export interface BroadbandWholesaleOrderPayload {
-  businessAccountId: string;
+  sourceOrderId: string;
+  sourceCustomerReference: string;
+  sourceServiceReference: string;
   businessServiceReference: string;
   quoteId?: string;
   postcode: string;
   uprn?: string;
+  address?: WholesaleAddress;
   productCode?: string;
   accessTechnology?: string;
-  installContactName?: string;
-  installContactPhone?: string;
-  installContactEmail?: string;
+  installContact?: WholesaleContact;
+  appointmentWindow?: string;
   notes?: string;
 }
 
@@ -132,8 +158,9 @@ export interface MaskedUpstreamError {
 
 export interface WholesaleEscalationPayload {
   serviceType: WholesaleServiceFamily;
-  orderId?: string;
   businessServiceReference: string;
+  sourceOrderId?: string;
+  orderId?: string;
   subject: string;
   description: string;
   priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
@@ -331,7 +358,7 @@ async function wholesaleFetch<T>(
         'Authorization': `Bearer ${config.apiKey}`,
         'X-Client': 'itsi-business',
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? JSON.stringify(sanitizeUpstreamWholesaleBody(body as Record<string, unknown>)) : undefined,
       signal: controller.signal,
     });
 
@@ -488,6 +515,30 @@ export const itsiMobileClient = {
       : this.getBroadbandOrderStatus(config, orderId);
   },
 
+  async getMobileOrderStatusBySource(config: WholesaleClientConfig, sourceOrderId: string): Promise<WholesaleOrderStatus> {
+    const data = await wholesaleFetch<Record<string, unknown>>(
+      config, 'GET', WHOLESALE_API_PATHS.mobileOrderBySourceStatus(sourceOrderId),
+    );
+    return normalizeOrderStatus('MOBILE', String(data.orderId ?? sourceOrderId), data);
+  },
+
+  async getBroadbandOrderStatusBySource(config: WholesaleClientConfig, sourceOrderId: string): Promise<WholesaleOrderStatus> {
+    const data = await wholesaleFetch<Record<string, unknown>>(
+      config, 'GET', WHOLESALE_API_PATHS.broadbandOrderBySourceStatus(sourceOrderId),
+    );
+    return normalizeOrderStatus('BROADBAND', String(data.orderId ?? sourceOrderId), data);
+  },
+
+  async getOrderStatusBySource(
+    config: WholesaleClientConfig,
+    serviceType: WholesaleServiceFamily,
+    sourceOrderId: string,
+  ): Promise<WholesaleOrderStatus> {
+    return serviceType === 'MOBILE'
+      ? this.getMobileOrderStatusBySource(config, sourceOrderId)
+      : this.getBroadbandOrderStatusBySource(config, sourceOrderId);
+  },
+
   async createEscalation(config: WholesaleClientConfig, payload: WholesaleEscalationPayload): Promise<WholesaleEscalationResult> {
     return wholesaleFetch<WholesaleEscalationResult>(config, 'POST', WHOLESALE_API_PATHS.escalations, payload);
   },
@@ -503,6 +554,10 @@ export const itsiMobileClient = {
 
   resolveOrderStatusPath(serviceType: WholesaleServiceFamily, orderId: string): string {
     return orderStatusPath(serviceType, orderId);
+  },
+
+  resolveOrderBySourceStatusPath(serviceType: WholesaleServiceFamily, sourceOrderId: string): string {
+    return orderBySourceStatusPath(serviceType, sourceOrderId);
   },
 
   resolveQuotePath(serviceType: WholesaleServiceFamily): string {

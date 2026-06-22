@@ -1,11 +1,39 @@
 /**
- * Types for the Itsi Business → Itsi Mobile wholesale API boundary.
+ * Types for the Itsi Business → Itsi Mobile wholesale API boundary (Phase 14W).
  *
  * Mobile and Broadband use separate route families and strongly typed payloads.
- * Do NOT add provider-specific fields here.
+ * Reseller attribution is derived from API key auth on Itsi Mobile — do not send
+ * wholesaleAccountId, apiKeyId, sourceCompany, sourcePlatform, or retail owner fields.
  */
 
 export type WholesaleServiceFamily = 'MOBILE' | 'BROADBAND';
+
+export interface WholesaleContact {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface WholesalePorting {
+  pac?: string;
+  stac?: string;
+  portingDate?: string;
+}
+
+export interface WholesaleAddress {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  postcode: string;
+  uprn?: string;
+}
+
+export interface WholesaleSourceAttribution {
+  sourceOrderId: string;
+  sourceCustomerReference: string;
+  sourceServiceReference: string;
+  businessServiceReference: string;
+}
 
 export interface WholesaleOrderResult {
   orderId: string;
@@ -27,6 +55,7 @@ export interface WholesaleOrderStatusResult {
 
 export interface MobileWholesaleQuoteRequest {
   productCode?: string;
+  tariffCode?: string;
   contractTermMonths?: number;
   simType?: string;
   simQuantity?: number;
@@ -41,38 +70,35 @@ export interface BroadbandWholesaleQuoteRequest {
   accessTechnology?: string;
 }
 
-export interface MobileWholesaleOrderRequest {
-  businessAccountId: string;
-  businessServiceReference: string;
+export interface MobileWholesaleOrderRequest extends WholesaleSourceAttribution {
   quoteId?: string;
   productCode?: string;
+  tariffCode?: string;
   contractTermMonths?: number;
   simType?: string;
   simQuantity?: number;
-  contactName?: string;
-  contactPhone?: string;
-  contactEmail?: string;
+  contact?: WholesaleContact;
+  porting?: WholesalePorting;
   notes?: string;
 }
 
-export interface BroadbandWholesaleOrderRequest {
-  businessAccountId: string;
-  businessServiceReference: string;
+export interface BroadbandWholesaleOrderRequest extends WholesaleSourceAttribution {
   quoteId?: string;
   postcode: string;
   uprn?: string;
+  address?: WholesaleAddress;
   productCode?: string;
   accessTechnology?: string;
-  installContactName?: string;
-  installContactPhone?: string;
-  installContactEmail?: string;
+  installContact?: WholesaleContact;
+  appointmentWindow?: string;
   notes?: string;
 }
 
 export interface WholesaleEscalationRequest {
   serviceType: WholesaleServiceFamily;
-  orderId?: string;
   businessServiceReference: string;
+  sourceOrderId?: string;
+  orderId?: string;
   subject: string;
   description: string;
   priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
@@ -86,7 +112,7 @@ export interface WholesaleEscalationResponse {
 
 /** Reserved mobile fields — not implemented until Itsi Mobile supports them */
 export type MobileWholesaleFutureFields =
-  | 'pac' | 'stac' | 'portingDate' | 'spendCapPence'
+  | 'spendCapPence'
   | 'roamingEnabled' | 'internationalBarred' | 'replacementSim';
 
 /** Reserved broadband fields — not implemented until Itsi Mobile supports them */

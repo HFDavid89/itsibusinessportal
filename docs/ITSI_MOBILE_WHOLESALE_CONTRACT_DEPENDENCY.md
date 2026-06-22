@@ -7,8 +7,8 @@
 
 | System | Owns |
 |--------|------|
-| **Itsi Business** | Business customer, retail service records, staff workflows, customer portal (safe visibility only) |
-| **Itsi Mobile** | Wholesale API, provider fulfilment (Gamma, KCOM, MS3, etc.), upstream diagnostics |
+| **Itsi Business** | Business customer, retail service records, retail billing, staff workflows, customer portal (safe visibility only) |
+| **Itsi Mobile** | Wholesale API, provider fulfilment (Gamma, KCOM, MS3, etc.), wholesale account billing, upstream diagnostics |
 
 Itsi Business **never** calls provider APIs directly.
 
@@ -25,6 +25,7 @@ Gap analysis: [`docs/WHOLESALE_API_CONTRACT_GAP_REPORT.md`](./WHOLESALE_API_CONT
 | Upstream HTTP client | `apps/api/src/services/wholesale/itsi-mobile-client.ts` |
 | Path constants | `apps/api/src/services/wholesale/wholesale-paths.ts` |
 | Payload validation | `apps/api/src/services/wholesale/wholesale-payload-schemas.ts` |
+| Payload sanitization | `apps/api/src/services/wholesale/wholesale-payload-sanitize.ts` |
 | Retail order request | `apps/api/src/services/wholesale/wholesale-order-service.ts` |
 | Staff proxy routes | `apps/api/src/routes/wholesale.ts` |
 | Service record routes | `apps/api/src/routes/services-wholesale.ts` |
@@ -43,8 +44,17 @@ The client routes underneath:
 
 ```typescript
 itsiMobileClient.createOrder(config, serviceType, payload)
-// → POST /api/v1/wholesale/orders/mobile
-// → POST /api/v1/wholesale/orders/broadband
+// → POST /api/v1/wholesale/orders/mobile | /orders/broadband
+// Payload: sourceOrderId, sourceCustomerReference, sourceServiceReference, businessServiceReference
+// Never sends wholesaleAccountId, apiKeyId, sourceCompany, retail owner fields (derived from API key)
+```
+
+Status refresh prefers by-source correlation:
+
+```typescript
+itsiMobileClient.getOrderStatusBySource(config, serviceType, serviceId)
+// → GET /api/v1/wholesale/orders/mobile/by-source/:sourceOrderId/status
+// Falls back to GET /api/v1/wholesale/orders/mobile/:id/status for pre-14W orders
 ```
 
 ## Environment variables
@@ -62,9 +72,10 @@ itsiMobileClient.createOrder(config, serviceType, payload)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **13A** | Itsi Business client + contract docs + payload tests | **Complete** (`864eefe`) — calls `/orders/mobile`, `/orders/broadband`, family status paths |
-| **14W** | Itsi Mobile family routes + contract tests | **Pending** — run in `HFDavid89/itsimobileportal` |
-| **13B** | E2E smoke test Itsi Business → Itsi Mobile | **Blocked** on 14W — see [`PHASE_13B_WHOLESALE_E2E_VERIFICATION.md`](./PHASE_13B_WHOLESALE_E2E_VERIFICATION.md) |
+| **13A** | Itsi Business client + contract docs + payload tests | **Complete** (`864eefe`) — family order/status paths |
+| **14W (Business)** | 14W attribution payloads, by-source status, upstream field sanitization | **Complete** — aligns with Itsi Mobile `e50d13d` |
+| **14W (Mobile)** | Itsi Mobile family routes + reseller attribution | **Reference** — `HFDavid89/itsimobileportal` @ `e50d13d` |
+| **13B** | E2E smoke test Itsi Business → Itsi Mobile | **Ready to run** — see [`PHASE_13B_WHOLESALE_E2E_VERIFICATION.md`](./PHASE_13B_WHOLESALE_E2E_VERIFICATION.md) |
 
 > **Gate:** Do not extend portal/SIM controls until 13B passes.
 

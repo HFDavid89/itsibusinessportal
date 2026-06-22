@@ -3,19 +3,20 @@
 > **Prerequisite:** Itsi Mobile Phase 14W complete — family-specific wholesale routes live in `HFDavid89/itsimobileportal`.
 > **Gate:** Do not extend Itsi Business portal/SIM controls until this phase passes.
 
-## Itsi Business client status (Phase 13A — done)
+## Itsi Business client status (Phase 14W — done)
 
-Commit `864eefe` — active upstream client already calls:
+Active upstream client calls family routes with 14W attribution:
 
 | Operation | Mobile | Broadband |
 |-----------|--------|-----------|
 | Create order | `POST /api/v1/wholesale/orders/mobile` | `POST /api/v1/wholesale/orders/broadband` |
-| Order status | `GET /api/v1/wholesale/orders/mobile/:id/status` | `GET /api/v1/wholesale/orders/broadband/:id/status` |
+| Order status (by id) | `GET /api/v1/wholesale/orders/mobile/:id/status` | `GET /api/v1/wholesale/orders/broadband/:id/status` |
+| Order status (by source) | `GET /api/v1/wholesale/orders/mobile/by-source/:sourceOrderId/status` | `GET /api/v1/wholesale/orders/broadband/by-source/:sourceOrderId/status` |
 
 Used by:
 
-- `requestWholesaleOrderForService()` → `itsiMobileClient.createOrder(config, serviceType, payload)`
-- `refreshWholesaleStatusForService()` → `itsiMobileClient.getOrderStatus(config, serviceType, orderId)`
+- `requestWholesaleOrderForService()` → `buildOrderPayload()` maps retail service id → `sourceOrderId`, account number → `sourceCustomerReference`
+- `refreshWholesaleStatusForService()` → `getOrderStatusBySource()` first, falls back to `getOrderStatus()` for legacy orders
 
 Deprecated generic `/wholesale/orders` exists only on **Itsi Business staff proxy routes** (with `X-Deprecated`) — the upstream client does not call generic paths.
 
@@ -45,9 +46,9 @@ ITSI_MOBILE_WHOLESALE_API_KEY=<partner-key>
 
 - [ ] Staff: open DRAFT/REQUESTED mobile service record
 - [ ] Request wholesale order → `POST /api/v1/services/mobile/:id/request-wholesale-order`
-- [ ] Upstream receives `POST /api/v1/wholesale/orders/mobile` (verify in Itsi Mobile logs)
+- [ ] Upstream receives `POST /api/v1/wholesale/orders/mobile` with `sourceOrderId`, `sourceCustomerReference`, `sourceServiceReference` (verify in Itsi Mobile logs)
 - [ ] Retail record gets `ItsiMobileWholesaleServiceLink` with order ID
-- [ ] Status refresh → upstream `GET /api/v1/wholesale/orders/mobile/:id/status`
+- [ ] Status refresh → upstream `GET /api/v1/wholesale/orders/mobile/by-source/:sourceOrderId/status` (fallback: `/:id/status`)
 - [ ] Timeline events: `WHOLESALE_ORDER_REQUESTED`, `WHOLESALE_STATUS_REFRESHED`
 
 ### 3. Broadband order flow
@@ -60,7 +61,7 @@ ITSI_MOBILE_WHOLESALE_API_KEY=<partner-key>
 
 ### 4. Escalation
 
-- [ ] `POST /api/v1/wholesale/escalations` with `serviceType: MOBILE`
+- [ ] `POST /api/v1/wholesale/escalations` with `serviceType: MOBILE`, `businessServiceReference`, optional `sourceOrderId`
 - [ ] Same with `serviceType: BROADBAND`
 
 ### 5. Negative cases

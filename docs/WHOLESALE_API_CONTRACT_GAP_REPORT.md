@@ -22,21 +22,22 @@ The Itsi Business wholesale **client is now aligned** to a Mobile/Broadband-sepa
 | Tests | None | No automated contract guard |
 | Legacy client | Unused `wholesale-client.ts` with different auth/paths | Confusion for implementers |
 
-## After Phase 13A (Itsi Business side)
+## After Phase 14W (Itsi Business side)
 
 | Area | Current state |
 |------|---------------|
-| Client | `itsi-mobile-client.ts` routes to family-specific upstream paths |
-| Internal router | `createOrder(serviceType, payload)`, `getOrderStatus(serviceType, orderId)` |
-| Staff API | Family routes under `/api/v1/wholesale/orders/mobile`, `/orders/broadband`, etc. |
-| Deprecated aliases | Generic staff routes kept with `X-Deprecated` headers; route internally |
-| Order service | `requestWholesaleOrderForService()` uses family-specific client methods |
-| Payload schemas | Zod validation split: `MobileOrderBodySchema`, `BroadbandOrderBodySchema` |
-| Escalations | `serviceType` required |
-| Contract tests | `pnpm --filter @itsi-business/api test:wholesale-contract` |
-| Docs | `WHOLESALE_API_CONTRACT.md`, this gap report, dependency doc |
+| Client | `itsi-mobile-client.ts` routes to family-specific upstream paths only |
+| Attribution | `sourceOrderId`, `sourceCustomerReference`, `sourceServiceReference`, `businessServiceReference` on all orders |
+| Sanitization | Forbidden reseller/retail fields stripped before upstream POST |
+| Status | By-source status preferred; order-id status fallback for legacy links |
+| Staff API | Family routes + `GET /orders/:family/by-source/:sourceOrderId/status` |
+| Deprecated aliases | Generic staff routes kept with `X-Deprecated`; map to 14W payloads internally |
+| Payload schemas | Zod: `MobileOrderBodySchema`, `BroadbandOrderBodySchema` with `SourceAttributionSchema` |
+| Escalations | `serviceType`, `businessServiceReference`, optional `sourceOrderId` |
+| Contract tests | Family paths, by-source paths, sanitization, no generic `/orders` in forward contract |
+| Docs | Phase 14W `WHOLESALE_API_CONTRACT.md`, dependency doc, 13B checklist |
 
-## Remaining gaps (Itsi Mobile repo — audit required)
+## Remaining gaps (Itsi Mobile staging verification for 13B)
 
 These must be verified or implemented in **Itsi Mobile** before Phase 13B:
 
@@ -49,9 +50,9 @@ These must be verified or implemented in **Itsi Mobile** before Phase 13B:
 | `POST /api/v1/wholesale/quotes/broadband` | Client ready | **Unknown** |
 | `POST /api/v1/wholesale/orders/mobile` | Client ready | **Unknown** — likely still generic `/orders` today |
 | `POST /api/v1/wholesale/orders/broadband` | Client ready | **Unknown** |
-| `GET /api/v1/wholesale/orders/mobile/:id/status` | Client ready | **Unknown** |
-| `GET /api/v1/wholesale/orders/broadband/:id/status` | Client ready | **Unknown** |
-| `POST /api/v1/wholesale/escalations` + `serviceType` | Client ready | **Unknown** |
+| `GET /api/v1/wholesale/orders/mobile/by-source/:sourceOrderId/status` | Client ready | **Verify on staging** |
+| `GET /api/v1/wholesale/orders/broadband/by-source/:sourceOrderId/status` | Client ready | **Verify on staging** |
+| `POST /api/v1/wholesale/escalations` + `serviceType` + `businessServiceReference` | Client ready | **Verify on staging** |
 
 ## Recommended Phase 13B smoke test matrix
 
