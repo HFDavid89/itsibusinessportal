@@ -486,4 +486,11 @@
     box-shadow: var(--shadow-card);
     padding: 1.25rem;
   }
+
+  .portal-hero-band {
+    background:
+      radial-gradient(ellipse 80% 60% at 100% 0%, rgb(var(--glow-accent) / 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, rgb(var(--glow-secondary) / 0.14) 0%, transparent 50%),
+      rgb(var(--surface-raised));
+  }
 }

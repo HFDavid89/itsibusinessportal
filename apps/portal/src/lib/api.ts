@@ -60,6 +60,24 @@ export interface PortalDashboard {
     paidCount: number;
     recent: PortalInvoiceSummary[];
   };
+  productEnquiries: { open: number };
+  energy: {
+    renewalsDue: number;
+    upcomingCheckIns: Array<{
+      id: string;
+      displayName: string;
+      status: string;
+      statusLabel: string;
+      nextCheckInDate: string | null;
+      contractEndDate: string | null;
+    }>;
+  };
+  recentActivity: Array<{
+    id: string;
+    type: string;
+    label: string;
+    createdAt: string;
+  }>;
 }
 
 export interface PortalInvoiceSummary {

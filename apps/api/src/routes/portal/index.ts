@@ -161,6 +161,12 @@ export async function portalRoutes(app: FastifyInstance) {
 
     const invoiceWhere = { accountId, status: { in: [...CUSTOMER_INVOICE_STATUSES] } };
 
+    const now = new Date();
+    const checkInHorizon = new Date(now);
+    checkInHorizon.setDate(checkInHorizon.getDate() + 30);
+    const renewalHorizon = new Date(now);
+    renewalHorizon.setDate(renewalHorizon.getDate() + 90);
+
     const [
       account,
       openTickets,
@@ -174,6 +180,10 @@ export async function portalRoutes(app: FastifyInstance) {
       paidCount,
       recentInvoices,
       recentTickets,
+      productEnquiryTickets,
+      energyRenewalsDue,
+      upcomingEnergyCheckIns,
+      recentTimeline,
     ] = await Promise.all([
       prisma.businessAccount.findUnique({
         where: { id: accountId },
@@ -208,9 +218,54 @@ export async function portalRoutes(app: FastifyInstance) {
         orderBy: { updatedAt: 'desc' },
         take: 5,
       }),
+      prisma.businessTicket.count({
+        where: {
+          accountId,
+          status: { in: [...OPEN_TICKET_STATUSES] },
+          subject: { startsWith: 'Product enquiry:' },
+        },
+      }),
+      prisma.businessEnergyService.count({
+        where: {
+          accountId,
+          customerVisible: true,
+          OR: [
+            { status: 'RENEWAL_DUE' },
+            { renewalWindowStartDate: { lte: renewalHorizon, gte: now } },
+          ],
+        },
+      }),
+      prisma.businessEnergyService.findMany({
+        where: {
+          accountId,
+          customerVisible: true,
+          nextCheckInDate: { lte: checkInHorizon, gte: now },
+        },
+        select: {
+          id: true, displayName: true, status: true,
+          nextCheckInDate: true, contractEndDate: true,
+        },
+        orderBy: { nextCheckInDate: 'asc' },
+        take: 5,
+      }),
+      prisma.timelineEvent.findMany({
+        where: { accountId },
+        select: { id: true, type: true, occurredAt: true, meta: true },
+        orderBy: { occurredAt: 'desc' },
+        take: 8,
+      }),
     ]);
 
     const activeServices = mobileServices + broadbandServices + energyServices;
+
+    const activityLabels: Record<string, string> = {
+      CUSTOMER_PRODUCT_ENQUIRY_CREATED: 'Product enquiry submitted',
+      CUSTOMER_TICKET_CREATED: 'Support ticket raised',
+      CUSTOMER_SERVICE_TICKET_CREATED: 'Service support request',
+      CUSTOMER_SIM_METADATA_UPDATED: 'SIM details updated',
+      ENERGY_CHECK_IN_COMPLETED: 'Energy check-in completed',
+      ENERGY_RENEWAL_WINDOW_OPEN: 'Energy renewal window opened',
+    };
 
     return reply.send({
       success: true,
@@ -229,6 +284,24 @@ export async function portalRoutes(app: FastifyInstance) {
             balanceDuePence: balanceDuePence(inv.totalPence, inv.amountPaidPence),
           })),
         },
+        productEnquiries: { open: productEnquiryTickets },
+        energy: {
+          renewalsDue: energyRenewalsDue,
+          upcomingCheckIns: upcomingEnergyCheckIns.map((e) => ({
+            id: e.id,
+            displayName: e.displayName,
+            status: e.status,
+            statusLabel: toPortalEnergyStatusLabel(e.status),
+            nextCheckInDate: e.nextCheckInDate?.toISOString() ?? null,
+            contractEndDate: e.contractEndDate?.toISOString() ?? null,
+          })),
+        },
+        recentActivity: recentTimeline.map((ev) => ({
+          id: ev.id,
+          type: ev.type,
+          label: activityLabels[ev.type] ?? ev.type.replace(/_/g, ' ').toLowerCase(),
+          createdAt: ev.occurredAt.toISOString(),
+        })),
       },
     });
   });

@@ -133,12 +133,12 @@ export const PORTAL_WIRING: WorkspaceWiring = {
     { label: 'Settings', href: PORTAL_ROUTES.settings, icon: '⚙', enabled: true, requiredRealm: 'portal' },
   ],
   quickActions: [
-    { label: 'View Services', href: PORTAL_ROUTES.services, enabled: true, requiredRealm: 'portal' },
-    { label: 'View Invoices', href: PORTAL_ROUTES.billing, enabled: true, requiredRealm: 'portal' },
-    { label: 'Raise Ticket', href: `${PORTAL_ROUTES.tickets}?new=1`, enabled: true, requiredRealm: 'portal' },
-    { label: 'Manage SIMs', href: PORTAL_ROUTES.fleet, enabled: true, requiredRealm: 'portal' },
-    { label: 'Manage Users', href: PORTAL_ROUTES.users, enabled: true, requiredRealm: 'portal' },
-    { label: 'Update Account Details', href: PORTAL_ROUTES.settings, enabled: true, requiredRealm: 'portal' },
+    { label: 'Raise support ticket', href: `${PORTAL_ROUTES.tickets}?new=1`, enabled: true, requiredRealm: 'portal' },
+    { label: 'View services', href: PORTAL_ROUTES.services, enabled: true, requiredRealm: 'portal' },
+    { label: 'View invoices', href: PORTAL_ROUTES.billing, enabled: true, requiredRealm: 'portal' },
+    { label: 'Request product information', href: PORTAL_ROUTES.products, enabled: true, requiredRealm: 'portal' },
+    { label: 'Request energy review', href: `${PORTAL_ROUTES.tickets}?new=1&category=ENERGY`, enabled: true, requiredRealm: 'portal' },
+    { label: 'Update SIM label / cost centre', href: PORTAL_ROUTES.fleet, enabled: true, requiredRealm: 'portal' },
   ],
 };
 
